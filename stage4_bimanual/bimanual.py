@@ -111,23 +111,23 @@ def execute(actions: list[Action], sim: Any | None = None) -> ExecutionResult:
 
         try:
             if act_name in ("open_drawer", "ActionType.OPEN_DRAWER"):
-                primitive = OpenDrawerPrimitive(executor)
+                primitive = OpenDrawerPrimitive(executor, sim)
                 success = primitive.execute()
 
             elif act_name in ("pick", "ActionType.PICK") and obj == "plate":
-                primitive = PickPlatePrimitive(executor)
+                primitive = PickPlatePrimitive(executor, sim)
                 success = primitive.execute()
 
             elif act_name in ("place", "ActionType.PLACE") and obj == "plate":
-                primitive = PlacePlatePrimitive(executor)
+                primitive = PlacePlatePrimitive(executor, sim)
                 success = primitive.execute()
 
             elif act_name in ("pick", "ActionType.PICK") and obj == "mug":
-                primitive = PickMugPrimitive(executor)
+                primitive = PickMugPrimitive(executor, sim)
                 success = primitive.execute()
 
             elif act_name in ("pour", "ActionType.POUR"):
-                primitive = PourWaterPrimitive(executor)
+                primitive = PourWaterPrimitive(executor, sim)
                 success = primitive.execute()
 
             else:

@@ -55,12 +55,16 @@ class DomainRandomizer:
             try:
                 body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, obj_name)
                 if body_id >= 0:
-                    dx = rng.uniform(jitter_range[0], jitter_range[1])
-                    dy = rng.uniform(jitter_range[0], jitter_range[1])
-                    model.body_pos[body_id][0] += dx
-                    model.body_pos[body_id][1] += dy
+                    jnt_id = model.body_jntadr[body_id]
+                    if jnt_id >= 0:
+                        q_adr = model.jnt_qposadr[jnt_id]
+                        dx = rng.uniform(jitter_range[0], jitter_range[1])
+                        dy = rng.uniform(jitter_range[0], jitter_range[1])
+                        data.qpos[q_adr] += dx
+                        data.qpos[q_adr + 1] += dy
             except Exception:
                 pass
+        mujoco.mj_forward(model, data)
 
         # 2. Lighting intensity variation
         light_range = cfg.get("lighting_intensity", [0.7, 1.3])
@@ -87,7 +91,7 @@ class DomainRandomizer:
         model.body_mass[:] *= mass_scale
 
         # Settle simulation under gravity
-        for _ in range(100):
+        for _ in range(50):
             mujoco.mj_step(model, data)
 
 
@@ -99,6 +103,17 @@ class MuJoCoSim:
         self.data = data
         self.seed = seed
         self._renderer: Any = None
+
+    def set_weld(self, weld_name: str, active: bool) -> None:
+        """Toggle an equality weld constraint dynamically."""
+        if not HAS_MUJOCO or self.model is None or self.data is None:
+            return
+        try:
+            weld_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_EQUALITY, weld_name)
+            if weld_id >= 0:
+                self.data.eq_active[weld_id] = 1 if active else 0
+        except Exception:
+            pass
 
     @property
     def renderer(self) -> Any:

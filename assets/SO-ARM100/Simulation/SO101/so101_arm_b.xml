@@ -58,8 +58,10 @@
                 <geom type="mesh" class="visual" pos="0.0077 0.0001 -0.0234" quat="0.707107 -0.707107 0 0" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material"/>
                 <geom type="mesh" class="collision" pos="0.0077 0.0001 -0.0234" quat="0.707107 -0.707107 0 0" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material"/>
                 <geom type="mesh" class="visual" pos="0 -0.000218214 0.000949706" quat="0 1 0 0" mesh="wrist_roll_follower_so101_v1" material="wrist_roll_follower_so101_v1_material"/>
-                <geom type="mesh" class="collision" pos="0 -0.000218214 0.000949706" quat="0 1 0 0" mesh="wrist_roll_follower_so101_v1" material="wrist_roll_follower_so101_v1_material"/>
+                <geom name="b_follower_jaw_geom" type="mesh" class="collision" pos="0 -0.000218214 0.000949706" quat="0 1 0 0" mesh="wrist_roll_follower_so101_v1" material="wrist_roll_follower_so101_v1_material"/>
                 
+                <!-- Precision Pinch Site at true jaw midpoint -->
+                <site group="3" name="b_pinch_site" pos="0.0045 0 -0.0382" size="0.005" rgba="0 0 0 0"/>
                 <site group="3" name="b_gripperframe" pos="-0.0079 -0.000218121 -0.0981274" quat="0.707107 0 0.707107 0"/>
                 
                 <!-- Moving Jaw Link -->
@@ -67,7 +69,7 @@
                   <joint axis="0 0 1" name="b_gripper" type="hinge" range="-0.17453 1.74533" class="sts3215"/>
                   <inertial pos="-0.00157495 -0.0300244 0.0192755" mass="0.012" fullinertia="6.61427e-06 1.89032e-06 5.28738e-06 -3.19807e-07 -5.90717e-09 -1.09945e-07"/>
                   <geom type="mesh" class="visual" pos="0 0 0.0189" quat="1 0 0 0" mesh="moving_jaw_so101_v1" material="moving_jaw_so101_v1_material"/>
-                  <geom type="mesh" class="collision" pos="0 0 0.0189" quat="1 0 0 0" mesh="moving_jaw_so101_v1" material="moving_jaw_so101_v1_material"/>
+                  <geom name="b_moving_jaw_geom" type="mesh" class="collision" pos="0 0 0.0189" quat="1 0 0 0" mesh="moving_jaw_so101_v1" material="moving_jaw_so101_v1_material"/>
                 </body>
               </body>
             </body>

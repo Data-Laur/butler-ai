@@ -154,7 +154,7 @@
     </body>
 
     <!-- 3D Realistic Clean Water Bottle (Arm A pouring into Arm B's mug) -->
-    <body name="water_bottle" pos="0.12 -0.04 0.70">
+    <body name="water_bottle" pos="0.15 -0.09 0.70">
       <freejoint/>
       <!-- Visual 3D Mesh -->
       <geom type="mesh" mesh="bottle_mesh" material="bottle_blue_mat" contype="0" conaffinity="0" group="2"/>
@@ -178,12 +178,27 @@
     </body>
   </worldbody>
 
-  <!-- Prevent accidental contact glitches between casing and plate -->
+  <!-- Prevent accidental contact glitches between casing and gripper contacts -->
   <contact>
     <exclude body1="plate" body2="drawer_unit"/>
+    <exclude body1="plate" body2="a_gripper_base"/>
+    <exclude body1="plate" body2="a_moving_jaw"/>
+    <exclude body1="mug" body2="b_gripper_base"/>
+    <exclude body1="mug" body2="b_moving_jaw"/>
+    <exclude body1="water_bottle" body2="a_gripper_base"/>
+    <exclude body1="water_bottle" body2="a_moving_jaw"/>
   </contact>
 
   <!-- Top-level robot includes -->
   <include file="SO-ARM100/Simulation/SO101/so101_arm_a.xml"/>
   <include file="SO-ARM100/Simulation/SO101/so101_arm_b.xml"/>
+
+  <!-- Dynamic Grasp Welds for realistic robotic manipulation (activated only during active grip) -->
+  <equality>
+    <weld name="weld_plate_drawer" body1="sliding_tray" body2="plate" active="true"/>
+    <weld name="weld_drawer" body1="a_gripper_base" body2="sliding_tray" active="false"/>
+    <weld name="weld_plate" body1="a_gripper_base" body2="plate" active="false"/>
+    <weld name="weld_mug" body1="b_gripper_base" body2="mug" active="false"/>
+    <weld name="weld_bottle" body1="a_gripper_base" body2="water_bottle" active="false"/>
+  </equality>
 </mujoco>

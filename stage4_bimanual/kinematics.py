@@ -39,8 +39,9 @@ class DLSInverseKinematics:
         self,
         arm: ArmIdentifier,
         target_pos_m: np.ndarray | list[float] | tuple[float, float, float],
+        wrist_roll: float = 0.0,
     ) -> tuple[bool, list[float], float]:
-        """Compute joint angles (radians) to reach target_pos_m.
+        """Compute joint angles (radians) to reach target_pos_m with specified wrist roll.
 
         Returns:
             (converged, joint_angles, residual_distance_m)
@@ -50,9 +51,12 @@ class DLSInverseKinematics:
 
         target = np.asarray(target_pos_m, dtype=np.float64)
         prefix = arm.lower()
-        site_name = f"{prefix}_gripperframe"
+        site_name = f"{prefix}_pinch_site"
 
         site_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, site_name)
+        if site_id < 0:
+            site_name = f"{prefix}_gripperframe"
+            site_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, site_name)
         if site_id < 0:
             raise ValueError(f"Site '{site_name}' not found in MuJoCo model.")
 
