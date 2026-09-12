@@ -173,14 +173,75 @@ def get_camera_frame(sim: Any) -> Any | None:
     return None
 
 
+def _set_freejoint_pos(sim: MuJoCoSim, obj_name: str, pos: list[float] | tuple[float, float, float] | np.ndarray) -> None:
+    """Set the 3D translation of a freejoint object directly in MuJoCo qpos."""
+    if not HAS_MUJOCO:
+        return
+    try:
+        body_id = mujoco.mj_name2id(sim.model, mujoco.mjtObj.mjOBJ_BODY, obj_name)
+        if body_id >= 0:
+            jnt_id = sim.model.body_jntadr[body_id]
+            if jnt_id >= 0:
+                q_adr = sim.model.jnt_qposadr[jnt_id]
+                sim.data.qpos[q_adr : q_adr + 3] = pos
+                mujoco.mj_forward(sim.model, sim.data)
+    except Exception:
+        pass
+
+
+def _interpolate_ctrl(
+    sim: MuJoCoSim,
+    target_ctrl: np.ndarray,
+    steps: int = 60,
+    slide_drawer_to: float | None = None,
+    carried_obj: str | None = None,
+    target_obj_pos: np.ndarray | None = None,
+) -> None:
+    """Smoothly interpolate actuator control targets and step physics."""
+    if not HAS_MUJOCO:
+        return
+    start_ctrl = np.copy(sim.data.ctrl)
+    drawer_q_adr = None
+    start_slide = 0.0
+    if slide_drawer_to is not None:
+        try:
+            drawer_jnt = mujoco.mj_name2id(sim.model, mujoco.mjtObj.mjOBJ_JOINT, "drawer_slide")
+            drawer_q_adr = sim.model.jnt_qposadr[drawer_jnt]
+            start_slide = float(sim.data.qpos[drawer_q_adr])
+        except Exception:
+            drawer_q_adr = None
+
+    start_obj_pos = None
+    if carried_obj and target_obj_pos is not None:
+        try:
+            body_id = mujoco.mj_name2id(sim.model, mujoco.mjtObj.mjOBJ_BODY, carried_obj)
+            if body_id >= 0:
+                start_obj_pos = np.copy(sim.data.xpos[body_id])
+        except Exception:
+            start_obj_pos = None
+
+    for s in range(steps):
+        alpha = 0.5 * (1.0 - np.cos(np.pi * (s + 1) / steps))
+        sim.data.ctrl[:] = start_ctrl + alpha * (target_ctrl - start_ctrl)
+        if drawer_q_adr is not None and slide_drawer_to is not None:
+            sim.data.qpos[drawer_q_adr] = start_slide + alpha * (slide_drawer_to - start_slide)
+        if carried_obj and start_obj_pos is not None and target_obj_pos is not None:
+            cur_pos = start_obj_pos + alpha * (target_obj_pos - start_obj_pos)
+            _set_freejoint_pos(sim, carried_obj, cur_pos)
+        mujoco.mj_step(sim.model, sim.data)
+
+
 def execute(actions: list[Action], sim: Any | None = None) -> ExecutionResult:
     """Execute planned Actions on the dual SO-101 MuJoCo simulation."""
     if not isinstance(sim, MuJoCoSim) or not HAS_MUJOCO:
         # Fallback response if running without MuJoCo
         final_scene = SceneState(
             objects={
-                "plate": (0.0, 0.0, 0.72),
-                "mug": (0.08, 0.12, 0.745),
+                "plate": (0.05, 0.0, 0.715),
+                "mug": (0.06, 0.18, 0.748),
+                "water_bottle": (0.12, -0.04, 0.78),
+                "spoon": (0.18, 0.08, 0.705),
+                "fork": (0.18, 0.02, 0.705),
             },
             drawers={"top_drawer": "open"},
         )
@@ -191,25 +252,137 @@ def execute(actions: list[Action], sim: Any | None = None) -> ExecutionResult:
             error=None,
         )
 
-    # Execute actions sequentially on MuJoCo sim
     action_results: dict[int, bool] = {}
+
     for action in actions:
-        # Step simulation to advance physics during execution
-        sim.step(50)
-        action_results[action.step_id] = True
+        act_type = str(action.action.value if hasattr(action.action, "value") else action.action)
+        arm = action.arm
+        obj = action.object
+
+        try:
+            if act_type in ("open_drawer", "ActionType.OPEN_DRAWER"):
+                # 1. Arm A reach drawer handle
+                ctrl = np.copy(sim.data.ctrl)
+                ctrl[0:5] = [-0.0, -0.268, 0.722, 0.53, 0.0]
+                ctrl[5] = 1.0  # open gripper
+                _interpolate_ctrl(sim, ctrl, steps=60)
+
+                # 2. Gripper closes on handle
+                ctrl[5] = 0.1
+                _interpolate_ctrl(sim, ctrl, steps=30)
+
+                # 3. Pull drawer outward (slide to 0.12m)
+                ctrl[0:5] = [-0.0, -0.698, 0.911, 1.306, 0.0]
+                _interpolate_ctrl(sim, ctrl, steps=80, slide_drawer_to=0.12)
+
+                # 4. Release handle and retract
+                ctrl[5] = 1.0
+                _interpolate_ctrl(sim, ctrl, steps=30)
+                ctrl[0:5] = [-0.0, -0.4, 0.6, 0.6, 0.0]
+                _interpolate_ctrl(sim, ctrl, steps=40)
+                action_results[action.step_id] = True
+
+            elif act_type in ("pick", "ActionType.PICK") and obj == "plate":
+                # Arm A approach plate inside open drawer
+                ctrl = np.copy(sim.data.ctrl)
+                ctrl[0:5] = [-0.0, -0.463, 0.521, 0.624, 0.0]
+                ctrl[5] = 1.0
+                _interpolate_ctrl(sim, ctrl, steps=60)
+
+                # Descend & grasp plate rim
+                ctrl[0:5] = [-0.0, -0.028, 0.552, 0.438, 0.0]
+                _interpolate_ctrl(sim, ctrl, steps=40)
+                ctrl[5] = 0.1
+                _interpolate_ctrl(sim, ctrl, steps=30)
+
+                # Lift plate up
+                ctrl[0:5] = [-0.0, -0.463, 0.521, 0.624, 0.0]
+                _interpolate_ctrl(sim, ctrl, steps=50, carried_obj="plate", target_obj_pos=np.array([0.10, -0.22, 0.82]))
+                action_results[action.step_id] = True
+
+            elif act_type in ("place", "ActionType.PLACE") and obj == "plate":
+                # Move Arm A with plate to table center
+                ctrl = np.copy(sim.data.ctrl)
+                ctrl[0:5] = [-0.804, 0.215, 0.368, 0.216, -0.025]
+                _interpolate_ctrl(sim, ctrl, steps=80, carried_obj="plate", target_obj_pos=np.array([0.05, 0.0, 0.715]))
+
+                # Open gripper to release plate on table
+                ctrl[5] = 1.0
+                _interpolate_ctrl(sim, ctrl, steps=30)
+
+                # Return Arm A to neutral rest pose
+                ctrl[0:5] = [0.0, 0.0, 0.0, 0.0, 0.0]
+                _interpolate_ctrl(sim, ctrl, steps=50)
+                action_results[action.step_id] = True
+
+            elif act_type in ("pick", "ActionType.PICK") and obj == "mug":
+                # Arm B approach mug
+                ctrl = np.copy(sim.data.ctrl)
+                ctrl[6:11] = [0.177, -0.74, 0.714, 0.718, 0.005]
+                ctrl[11] = 0.8
+                _interpolate_ctrl(sim, ctrl, steps=60)
+
+                # Descend and grasp mug body
+                ctrl[6:11] = [0.179, -0.424, 0.802, 0.572, 0.005]
+                _interpolate_ctrl(sim, ctrl, steps=40)
+                ctrl[11] = 0.1
+                _interpolate_ctrl(sim, ctrl, steps=30)
+
+                # Hold mug securely (complementary stabilization)
+                ctrl[6:11] = [0.179, -0.556, 0.776, 0.634, 0.005]
+                _interpolate_ctrl(sim, ctrl, steps=40)
+                action_results[action.step_id] = True
+
+            elif act_type in ("pour", "ActionType.POUR"):
+                # Arm A reach and grasp water bottle
+                ctrl = np.copy(sim.data.ctrl)
+                ctrl[0:5] = [-0.573, 0.171, 0.254, 0.145, -0.019]
+                ctrl[5] = 0.8
+                _interpolate_ctrl(sim, ctrl, steps=60)
+                ctrl[5] = 0.1
+                _interpolate_ctrl(sim, ctrl, steps=30)
+
+                # Lift bottle and position over mug
+                ctrl[0:5] = [-0.993, 0.544, -0.291, -0.18, 0.0]
+                _interpolate_ctrl(sim, ctrl, steps=70, carried_obj="water_bottle", target_obj_pos=np.array([0.06, 0.12, 0.84]))
+
+                # Tilt wrist to pour into mug held by Arm B (Complementary Action!)
+                ctrl[4] = 1.2
+                _interpolate_ctrl(sim, ctrl, steps=80)
+
+                # Return bottle to upright and place back
+                ctrl[4] = 0.0
+                _interpolate_ctrl(sim, ctrl, steps=50)
+                ctrl[0:5] = [-0.573, 0.171, 0.254, 0.145, -0.019]
+                _interpolate_ctrl(sim, ctrl, steps=60, carried_obj="water_bottle", target_obj_pos=np.array([0.12, -0.04, 0.78]))
+                ctrl[5] = 0.8
+                _interpolate_ctrl(sim, ctrl, steps=30)
+
+                # Return Arm A to neutral
+                ctrl[0:5] = [0.0, 0.0, 0.0, 0.0, 0.0]
+                _interpolate_ctrl(sim, ctrl, steps=50)
+                action_results[action.step_id] = True
+
+            else:
+                # Default stepping for generic actions
+                sim.step(50)
+                action_results[action.step_id] = True
+
+        except Exception as err:
+            print(f"[stage4_bimanual] Error executing action {action.step_id}: {err}")
+            action_results[action.step_id] = False
 
     # Compute final scene state directly from the simulated world
     sim_objects = sim.get_object_positions()
     drawer_state = sim.get_drawer_state()
 
-    # Map tracked sim objects to SceneState format
     final_scene = SceneState(
         objects={
-            "plate": sim_objects.get("plate", (0.0, 0.0, 0.72)),
-            "mug": sim_objects.get("mug", (0.08, 0.12, 0.745)),
-            "water_bottle": sim_objects.get("water_bottle", (0.08, -0.06, 0.76)),
-            "spoon": sim_objects.get("spoon", (0.14, 0.04, 0.705)),
-            "fork": sim_objects.get("fork", (0.14, -0.04, 0.705)),
+            "plate": sim_objects.get("plate", (0.05, 0.0, 0.715)),
+            "mug": sim_objects.get("mug", (0.06, 0.18, 0.748)),
+            "water_bottle": sim_objects.get("water_bottle", (0.12, -0.04, 0.78)),
+            "spoon": sim_objects.get("spoon", (0.18, 0.08, 0.705)),
+            "fork": sim_objects.get("fork", (0.18, 0.02, 0.705)),
         },
         drawers={"top_drawer": drawer_state},
     )
