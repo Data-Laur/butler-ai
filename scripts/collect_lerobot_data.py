@@ -30,13 +30,14 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 try:
+    import cv2
     import mujoco
     import numpy as np
     from PIL import Image
     import pyarrow as pa
     import pyarrow.parquet as pq
 except ImportError as err:
-    sys.exit(f"Missing dependency: {err}. Please run: pip install pyarrow Pillow mujoco numpy")
+    sys.exit(f"Missing dependency: {err}. Please run: pip install pyarrow Pillow mujoco numpy opencv-python")
 
 from stage4_bimanual.bimanual import reset_scene
 from stage4_bimanual.primitives import (
@@ -131,11 +132,40 @@ class RecordingTrajectoryExecutor(TrajectoryExecutor):
                 self._sample()
 
 
+def _save_video(images: list[np.ndarray], output_file: Path, fps: int = 30) -> None:
+    """Save RGB image sequence as an MP4 video."""
+    if not images:
+        return
+    h, w, _ = images[0].shape
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    writer = cv2.VideoWriter(str(output_file), fourcc, float(fps), (w, h))
+    for frame in images:
+        writer.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+    writer.release()
+
+
+def _save_gif(images: list[np.ndarray], output_file: Path, fps: int = 15, stride: int = 2) -> None:
+    """Save RGB image sequence as an animated GIF."""
+    if not images:
+        return
+    pil_images = [Image.fromarray(img) for img in images[::stride]]
+    if pil_images:
+        pil_images[0].save(
+            output_file,
+            save_all=True,
+            append_images=pil_images[1:],
+            duration=int(1000 / fps),
+            loop=0,
+            optimize=True,
+        )
+
+
 def collect_dataset(
     num_episodes: int = 50,
     output_dir: Path | str = "data/lerobot_bimanual_v2",
     fps: int = 30,
     render_images: bool = True,
+    save_gif: bool = True,
 ) -> None:
     output_path = Path(output_dir)
     data_dir = output_path / "data" / "chunk-000"
@@ -144,7 +174,7 @@ def collect_dataset(
 
     data_dir.mkdir(parents=True, exist_ok=True)
     meta_dir.mkdir(parents=True, exist_ok=True)
-    if render_images:
+    if render_images and save_gif:
         videos_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"============================================================")
@@ -152,6 +182,7 @@ def collect_dataset(
     print(f"Target Episodes: {num_episodes}")
     print(f"Output Directory: {output_path.resolve()}")
     print(f"Render Visual Frames: {render_images}")
+    print(f"Save Animated GIF:    {save_gif and render_images}")
     print(f"============================================================\n")
 
     episodes_meta = []
@@ -235,8 +266,19 @@ def collect_dataset(
         parquet_file = data_dir / f"episode_{ep_idx:06d}.parquet"
         pq.write_table(table, parquet_file, compression="zstd")
 
-        # Save first and last frame preview
+        # Save training example video, gif, and preview images for instant verification
         if render_images and executor.images:
+            # 1. Save standard LeRobot MP4 video
+            if save_video:
+                video_file = videos_dir / f"episode_{ep_idx:06d}.mp4"
+                _save_video(executor.images, video_file, fps=fps)
+
+            # 2. Save animated GIF if requested
+            if save_gif:
+                gif_file = videos_dir / f"episode_{ep_idx:06d}.gif"
+                _save_gif(executor.images, gif_file, fps=15, stride=2)
+
+            # 3. Save first and last frame preview
             preview_dir = videos_dir / f"episode_{ep_idx:06d}"
             preview_dir.mkdir(parents=True, exist_ok=True)
             Image.fromarray(executor.images[0]).save(preview_dir / "frame_first.jpg")
@@ -250,7 +292,9 @@ def collect_dataset(
 
         global_frame_idx += ep_len
         successful_episodes += 1
-        print(f"  -> Saved {parquet_file.name} ({ep_len} timesteps, {ep_len/fps:.1f}s)")
+        video_note = " + video" if (render_images and save_video) else ""
+        gif_note = " + gif" if (render_images and save_gif) else ""
+        print(f"  -> Saved {parquet_file.name} ({ep_len} timesteps, {ep_len/fps:.1f}s){video_note}{gif_note}")
         seed += 1
 
     # Write meta/tasks.jsonl
@@ -314,6 +358,17 @@ def collect_dataset(
             "task_index": {"dtype": "int64", "shape": [1]},
         },
     }
+    if render_images and save_video:
+        info["features"]["observation.images.overhead"] = {
+            "dtype": "video",
+            "shape": [480, 640, 3],
+            "names": ["height", "width", "channel"],
+            "info": {
+                "video.fps": float(fps),
+                "video.codec": "mp4v",
+            },
+        }
+
     with open(meta_dir / "info.json", "w", encoding="utf-8") as f:
         json.dump(info, f, indent=2)
 
@@ -331,6 +386,8 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", type=str, default="data/lerobot_bimanual_v2", help="Dataset directory")
     parser.add_argument("--fps", type=int, default=30, help="Framerate (default: 30)")
     parser.add_argument("--no-images", action="store_true", help="Skip rendering visual camera images")
+    parser.add_argument("--save-gif", action="store_true", help="Also save animated GIF for each episode")
+    parser.add_argument("--no-video", action="store_true", help="Skip saving MP4 video files")
     args = parser.parse_args()
 
     collect_dataset(
@@ -338,4 +395,6 @@ if __name__ == "__main__":
         output_dir=args.output_dir,
         fps=args.fps,
         render_images=not args.no_images,
+        save_video=not args.no_video,
+        save_gif=args.save_gif,
     )
