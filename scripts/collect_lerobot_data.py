@@ -266,23 +266,10 @@ def collect_dataset(
         parquet_file = data_dir / f"episode_{ep_idx:06d}.parquet"
         pq.write_table(table, parquet_file, compression="zstd")
 
-        # Save training example video, gif, and preview images for instant verification
-        if render_images and executor.images:
-            # 1. Save standard LeRobot MP4 video
-            if save_video:
-                video_file = videos_dir / f"episode_{ep_idx:06d}.mp4"
-                _save_video(executor.images, video_file, fps=fps)
-
-            # 2. Save animated GIF if requested
-            if save_gif:
-                gif_file = videos_dir / f"episode_{ep_idx:06d}.gif"
-                _save_gif(executor.images, gif_file, fps=15, stride=2)
-
-            # 3. Save first and last frame preview
-            preview_dir = videos_dir / f"episode_{ep_idx:06d}"
-            preview_dir.mkdir(parents=True, exist_ok=True)
-            Image.fromarray(executor.images[0]).save(preview_dir / "frame_first.jpg")
-            Image.fromarray(executor.images[-1]).save(preview_dir / "frame_final.jpg")
+        # Save training example GIF preview for instant verification
+        if render_images and executor.images and save_gif:
+            gif_file = videos_dir / f"episode_{ep_idx:06d}.gif"
+            _save_gif(executor.images, gif_file, fps=15, stride=2)
 
         episodes_meta.append({
             "episode_index": ep_idx,
@@ -292,9 +279,8 @@ def collect_dataset(
 
         global_frame_idx += ep_len
         successful_episodes += 1
-        video_note = " + video" if (render_images and save_video) else ""
         gif_note = " + gif" if (render_images and save_gif) else ""
-        print(f"  -> Saved {parquet_file.name} ({ep_len} timesteps, {ep_len/fps:.1f}s){video_note}{gif_note}")
+        print(f"  -> Saved {parquet_file.name} ({ep_len} timesteps, {ep_len/fps:.1f}s){gif_note}")
         seed += 1
 
     # Write meta/tasks.jsonl
@@ -385,9 +371,8 @@ if __name__ == "__main__":
     parser.add_argument("--num-episodes", type=int, default=5, help="Number of episodes to record (default: 5)")
     parser.add_argument("--output-dir", type=str, default="data/lerobot_bimanual_v2", help="Dataset directory")
     parser.add_argument("--fps", type=int, default=30, help="Framerate (default: 30)")
-    parser.add_argument("--no-images", action="store_true", help="Skip rendering visual camera images")
-    parser.add_argument("--save-gif", action="store_true", help="Also save animated GIF for each episode")
-    parser.add_argument("--no-video", action="store_true", help="Skip saving MP4 video files")
+    parser.add_argument("--no-images", action="store_true", help="Skip rendering visual camera frames")
+    parser.add_argument("--no-gif", action="store_true", help="Skip saving animated GIF previews")
     args = parser.parse_args()
 
     collect_dataset(
@@ -395,6 +380,5 @@ if __name__ == "__main__":
         output_dir=args.output_dir,
         fps=args.fps,
         render_images=not args.no_images,
-        save_video=not args.no_video,
-        save_gif=args.save_gif,
+        save_gif=not args.no_gif,
     )

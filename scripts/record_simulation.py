@@ -156,20 +156,9 @@ def record(seed: int = 0) -> None:
             snapshot.save(_OUT_DIR / snapshot_names[i])
             print(f"  -> Saved {snapshot_names[i]}")
 
-        # Save individual skill animated GIF and MP4 for quick inspection
+        # Save individual skill animated GIF for quick inspection
         step_frames = executor.frames[frame_before:frame_after]
         if len(step_frames) > 1:
-            # 1. MP4 video (fast, smooth 30fps)
-            step_mp4 = _OUT_DIR / f"{skill_names[i]}.mp4"
-            h, w = step_frames[0].height, step_frames[0].width
-            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-            writer = cv2.VideoWriter(str(step_mp4), fourcc, 30.0, (w, h))
-            for frame in step_frames:
-                writer.write(cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR))
-            writer.release()
-            print(f"  -> Saved {skill_names[i]}.mp4")
-
-            # 2. Animated GIF (downsampled by 2 for compact file size & fast saving)
             step_gif = _OUT_DIR / f"{skill_names[i]}.gif"
             gif_frames = step_frames[::2]
             gif_frames[0].save(
@@ -200,19 +189,8 @@ def record(seed: int = 0) -> None:
     for name, pos in positions.items():
         print(f"  {name}: ({pos[0]:.3f}, {pos[1]:.3f}, {pos[2]:.3f})")
 
-    # 5. Save full simulation video (MP4) and animated GIF
+    # 5. Save full simulation animated GIF
     if len(executor.frames) > 1:
-        # Full MP4 video
-        mp4_path = _OUT_DIR / "bimanual_simulation_full.mp4"
-        h, w = executor.frames[0].height, executor.frames[0].width
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        writer = cv2.VideoWriter(str(mp4_path), fourcc, 30.0, (w, h))
-        for frame in executor.frames:
-            writer.write(cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR))
-        writer.release()
-        print(f"\nMP4 saved: {mp4_path}")
-
-        # Full GIF (downsampled by 2)
         gif_path = _OUT_DIR / "bimanual_simulation_full.gif"
         gif_frames = executor.frames[::2]
         gif_frames[0].save(
@@ -223,9 +201,9 @@ def record(seed: int = 0) -> None:
             loop=0,
             optimize=True,
         )
-        print(f"GIF saved: {gif_path}")
+        print(f"\nGIF saved: {gif_path}")
     else:
-        print("\nNot enough frames for GIF/MP4.")
+        print("\nNot enough frames for GIF.")
 
     print(f"\nRecording complete! Total frames: {len(executor.frames)}")
     print(f"Contact audit: {sim.contact_audit.summary()}")
