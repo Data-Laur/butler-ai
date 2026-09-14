@@ -218,21 +218,16 @@ class OpenDrawerPrimitive(BaseManipulationPrimitive):
 
         # 5. Release and retract vertically.
         self.detach_weld("weld_drawer")
-        ctrl[5] = 0.45  # Relax grip
-        self.executor.interpolate(ctrl, steps=10)
 
-        # Retreat slightly away from the handle in -X before vertical ascent
-        retract_x = pull_target[0] - 0.015
-        ctrl[0:5] = self.solve_ik("A", [retract_x, pull_target[1], handle_pos[2]], wrist_roll=0.0)
+        # Lift straight up vertically off the cylindrical handle while maintaining pinch shape
+        # (prevents moving jaw from swinging into or hooking against the handle/face)
+        for z_wp in np.linspace(handle_pos[2], ALTITUDE_SAFE_TRANSIT, 6)[1:]:
+            ctrl[0:5] = self.solve_ik("A", [pull_target[0], pull_target[1], z_wp], wrist_roll=0.0)
+            self.executor.interpolate(ctrl, steps=10)
+
+        # Once safely clear of the handle in the upper airspace, open gripper
         ctrl[5] = GRIPPER_OPEN
         self.executor.interpolate(ctrl, steps=10)
-
-        # Retract straight up via Cartesian waypoints to clear the handle area without forward arcing
-        z_retract = np.linspace(handle_pos[2], ALTITUDE_SAFE_TRANSIT, 6)[1:]
-        for z_wp in z_retract:
-            q_wp = self.solve_ik("A", [retract_x, pull_target[1], z_wp], wrist_roll=0.0)
-            ctrl[0:5] = q_wp
-            self.executor.interpolate(ctrl, steps=10)
 
         final_slide = float(self.data.qpos[self.model.jnt_qposadr[drawer_joint]])
         if final_slide <= 0.04:
@@ -434,7 +429,7 @@ class PourWaterPrimitive(BaseManipulationPrimitive):
             self.executor.interpolate(ctrl, steps=10)
 
         # 7. Move bottle to pour position (beside mug station on -Y side with orientation preserved)
-        bottle_pour_pos = np.array([0.06, 0.065, 0.94])
+        bottle_pour_pos = np.array([0.06, 0.050, 0.94])
         ctrl[0:5] = self.solve_ik("A", bottle_pour_pos, wrist_roll=1.57)
         self.executor.interpolate(ctrl, steps=30)
 

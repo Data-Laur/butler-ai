@@ -61,7 +61,7 @@ ALTITUDE_GRASP_PLATE: Final[float] = 0.730   # Gripper pinch site height for pla
 ALTITUDE_GRASP_MUG: Final[float] = 0.765     # Pinch site height for mug upper body grasp
 ALTITUDE_GRASP_BOTTLE: Final[float] = 0.860  # Pinch site height for bottle neck grasp
 ALTITUDE_SAFE_TRANSIT: Final[float] = 0.95   # Unobstructed 3D airspace above all tabletop objects
-ALTITUDE_APPROACH_HIGH: Final[float] = 0.96  # High waypoint for approaching tall obstacles
+ALTITUDE_APPROACH_HIGH: Final[float] = 0.910 # High waypoint for approaching tall obstacles (within kinematic reach)
 
 # Standby configurations: compactly tucked back, clear of central tabletop workspace
 ARM_A_STANDBY: Final[list[float]] = [-0.10, -0.80, 1.40, -0.60, 0.0]
