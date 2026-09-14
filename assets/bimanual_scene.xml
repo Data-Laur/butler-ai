@@ -106,9 +106,12 @@
       <freejoint/>
       <!-- Visual 3D Mesh -->
       <geom type="mesh" mesh="mug_mesh" material="ceramic_blue_mat" contype="0" conaffinity="0" group="2"/>
-      <!-- Physical Collision Cylinder -->
-      <geom name="mug_geom" type="cylinder" size="0.044 0.048" pos="0 0 0.048" mass="0.14" friction="1.8 0.01 0.001" rgba="0 0 0 0" group="3"/>
-      <site name="mug_site" pos="0 0 0.048" rgba="0 0 0 0" group="3"/>
+      <!-- Physical Collision Cylinder (aligned with visual cylinder) -->
+      <geom name="mug_geom" type="cylinder" size="0.044 0.048" pos="0 -0.018 0.048" mass="0.12" friction="1.8 0.01 0.001" rgba="0 0 0 0" group="3"/>
+      <!-- Physical Collision Handle (capsule spanning vertical handle loop) -->
+      <geom name="mug_handle" type="capsule" fromto="0 0.050 0.030 0 0.050 0.075" size="0.010" mass="0.02" friction="2.0 0.01 0.001" rgba="0 0 0 0" group="3"/>
+      <site name="mug_site" pos="0 -0.018 0.048" rgba="0 0 0 0" group="3"/>
+      <site name="mug_handle_site" pos="0 0.050 0.065" size="0.005" rgba="0 0 0 0" group="3"/>
     </body>
 
     <!-- Fully Covered Modern Desktop Drawer Cabinet (Comfortable reach from Arm A) -->

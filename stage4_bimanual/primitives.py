@@ -268,11 +268,11 @@ class PickPlatePrimitive(BaseManipulationPrimitive):
 
         # 4. Clamp gripper firmly on plate rim
         ctrl[5] = GRIPPER_CLOSED
-        self.executor.interpolate(ctrl, steps=20)
-
-        # Attach robot gripper weld at exact physical contact, detach tray anchor weld
+        self.executor.interpolate(ctrl, steps=35)
         if not self.attach_weld("weld_plate"):
-            return False
+            self.executor.interpolate(ctrl, steps=15)
+            if not self.attach_weld("weld_plate"):
+                return False
         self.detach_weld("weld_plate_drawer")
 
         # 5. Pure vertical lift straight up to safe transit altitude via Cartesian waypoints
@@ -293,7 +293,7 @@ class PlacePlatePrimitive(BaseManipulationPrimitive):
         ctrl = np.copy(self.data.ctrl)
 
         # Calibrated pinch target so plate center lands accurately at (0.06, 0.00)
-        pinch_target_xy = [0.038, -0.025]
+        pinch_target_xy = [0.020, 0.000]
         plate_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "plate")
         plate_pos = np.copy(self.data.xpos[plate_id]) if plate_id >= 0 else np.array([0.06, -0.22, 0.95])
 
@@ -321,7 +321,7 @@ class PlacePlatePrimitive(BaseManipulationPrimitive):
         self.executor.interpolate(ctrl, steps=10)
 
         # Retreat horizontally away from plate rim before vertical retraction
-        retreat_xy = [pinch_target_xy[0] - 0.025, pinch_target_xy[1] - 0.015]
+        retreat_xy = [-0.015, 0.000]
         ctrl[0:5] = self.solve_ik("A", [retreat_xy[0], retreat_xy[1], ALTITUDE_GRASP_PLATE], wrist_roll=0.0)
         ctrl[5] = GRIPPER_OPEN
         self.executor.interpolate(ctrl, steps=10)
@@ -345,39 +345,49 @@ class PickMugPrimitive(BaseManipulationPrimitive):
         if not HAS_MUJOCO or self.model is None or self.data is None:
             return True
 
-        # 1. Query physical mug coordinates
-        mug_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "mug")
-        mug_pos = (
-            np.copy(self.data.xpos[mug_id])
-            if mug_id >= 0
-            else np.array([0.12, 0.20, 0.70])
+        # 1. Query physical mug & handle coordinates
+        handle_site_id = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_SITE, "mug_handle_site"
         )
+        if handle_site_id >= 0:
+            target_pos = np.copy(self.data.site_xpos[handle_site_id])
+        else:
+            mug_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "mug")
+            mug_pos = (
+                np.copy(self.data.xpos[mug_id])
+                if mug_id >= 0
+                else np.array([0.06, 0.18, 0.70])
+            )
+            target_pos = mug_pos + np.array([0.0, 0.050, 0.065])
 
-        # 2. Elevated pre-grasp waypoint directly above mug at safe transit altitude
-        pre_grasp = np.array([mug_pos[0], mug_pos[1], ALTITUDE_SAFE_TRANSIT])
+        # 2. Elevated pre-grasp waypoint directly above handle at safe transit altitude
+        pre_grasp = np.array([target_pos[0], target_pos[1], ALTITUDE_SAFE_TRANSIT])
         ctrl = np.copy(self.data.ctrl)
         ctrl[6:11] = self.solve_ik("B", pre_grasp, wrist_roll=0.0)
         ctrl[11] = GRIPPER_OPEN
         self.executor.interpolate(ctrl, steps=25)
 
-        # 3. Pure vertical descent to mug body grasp height via Cartesian waypoints
-        for z_wp in np.linspace(ALTITUDE_SAFE_TRANSIT, ALTITUDE_GRASP_MUG, 6)[1:]:
-            ctrl[6:11] = self.solve_ik("B", [mug_pos[0], mug_pos[1], z_wp], wrist_roll=0.0)
+        # 3. Pure vertical descent to handle grasp height via Cartesian waypoints
+        grasp_z = target_pos[2]
+        for z_wp in np.linspace(ALTITUDE_SAFE_TRANSIT, grasp_z, 6)[1:]:
+            ctrl[6:11] = self.solve_ik("B", [target_pos[0], target_pos[1], z_wp], wrist_roll=0.0)
             self.executor.interpolate(ctrl, steps=10)
 
-        # 4. Clamp gripper firmly around mug & attach weld
+        # 4. Clamp gripper firmly around handle & attach weld
         ctrl[11] = GRIPPER_CLOSED
-        self.executor.interpolate(ctrl, steps=20)
+        self.executor.interpolate(ctrl, steps=35)
         if not self.attach_weld("weld_mug"):
-            return False
+            self.executor.interpolate(ctrl, steps=15)
+            if not self.attach_weld("weld_mug"):
+                return False
 
-        # 5. Pure vertical lift to safe transit altitude via Cartesian waypoints
-        for z_wp in np.linspace(ALTITUDE_GRASP_MUG, ALTITUDE_SAFE_TRANSIT, 6)[1:]:
-            ctrl[6:11] = self.solve_ik("B", [mug_pos[0], mug_pos[1], z_wp], wrist_roll=0.0)
+        # 5. Pure vertical lift via Cartesian waypoints to bimanual pouring altitude
+        for z_wp in np.linspace(grasp_z, 0.82, 6)[1:]:
+            ctrl[6:11] = self.solve_ik("B", [target_pos[0], target_pos[1], z_wp], wrist_roll=0.0)
             self.executor.interpolate(ctrl, steps=10)
 
-        # 6. Move mug to bimanual pouring station (suspended 12cm above table, clear of cutlery)
-        mug_pour_station = np.array([0.06, 0.17, 0.82])
+        # 6. Move mug to bimanual pouring station (central shared workspace, clear of plate)
+        mug_pour_station = np.array([0.12, 0.12, 0.82])
         ctrl[6:11] = self.solve_ik("B", mug_pour_station, wrist_roll=0.0)
         self.executor.interpolate(ctrl, steps=30)
 
@@ -399,37 +409,45 @@ class PourWaterPrimitive(BaseManipulationPrimitive):
             else np.array([0.14, -0.04, 0.70])
         )
 
-        # 2. Elevated pre-approach: raise arm high before lateral motion to clear bottle top
-        q_standby_high = self.solve_ik("A", [0.00, -0.20, ALTITUDE_APPROACH_HIGH], wrist_roll=1.57)
+        # 2. Elevated home lift: ascend straight up in home workspace (Y=-0.20) to safe flight altitude
+        q_home_high = self.solve_ik("A", [0.05, -0.20, 0.93], wrist_roll=1.57)
         ctrl = np.copy(self.data.ctrl)
-        ctrl[0:5] = q_standby_high
+        ctrl[0:5] = q_home_high
         ctrl[5] = GRIPPER_OPEN
         self.executor.interpolate(ctrl, steps=25)
 
-        # 3. Approach directly above bottle at high transit altitude
-        pre_grasp = np.array([bottle_pos[0], bottle_pos[1], ALTITUDE_APPROACH_HIGH])
+        # Re-query real-time bottle position after arm transit
+        if bottle_id >= 0:
+            bottle_pos = np.copy(self.data.xpos[bottle_id])
+
+        # 3. High horizontal transit directly centered above bottle in safe airspace
+        pre_grasp = np.array([bottle_pos[0], bottle_pos[1], 0.93])
         q_pre = self.solve_ik("A", pre_grasp, wrist_roll=1.57)
         ctrl[0:5] = q_pre
-        self.executor.interpolate(ctrl, steps=30)
+        self.executor.interpolate(ctrl, steps=25)
 
         # 4. Pure vertical descent to bottle neck grasp height via Cartesian waypoints
-        for z_wp in np.linspace(ALTITUDE_APPROACH_HIGH, ALTITUDE_GRASP_BOTTLE, 6)[1:]:
+        for z_wp in np.linspace(0.93, 0.855, 6)[1:]:
             ctrl[0:5] = self.solve_ik("A", [bottle_pos[0], bottle_pos[1], z_wp], wrist_roll=1.57)
             self.executor.interpolate(ctrl, steps=10)
 
         # 5. Clamp gripper firmly around bottle & attach weld
         ctrl[5] = GRIPPER_CLOSED
-        self.executor.interpolate(ctrl, steps=20)
+        self.executor.interpolate(ctrl, steps=35)
         if not self.attach_weld("weld_bottle"):
-            return False
+            self.executor.interpolate(ctrl, steps=15)
+            if not self.attach_weld("weld_bottle"):
+                return False
 
         # 6. Pure vertical lift to high transit altitude via Cartesian waypoints
-        for z_wp in np.linspace(ALTITUDE_GRASP_BOTTLE, ALTITUDE_APPROACH_HIGH, 6)[1:]:
+        for z_wp in np.linspace(0.855, 0.93, 6)[1:]:
             ctrl[0:5] = self.solve_ik("A", [bottle_pos[0], bottle_pos[1], z_wp], wrist_roll=1.57)
             self.executor.interpolate(ctrl, steps=10)
 
-        # 7. Move bottle to pour position (beside mug station on -Y side with orientation preserved)
-        bottle_pour_pos = np.array([0.06, 0.050, 0.94])
+        # 7. Move bottle to dynamic pour position calculated relative to live mug location
+        mug_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "mug")
+        mug_pos = np.copy(self.data.xpos[mug_id]) if mug_id >= 0 else np.array([0.12, 0.07, 0.77])
+        bottle_pour_pos = np.array([mug_pos[0], mug_pos[1] - 0.08, mug_pos[2] + 0.13])
         ctrl[0:5] = self.solve_ik("A", bottle_pour_pos, wrist_roll=1.57)
         self.executor.interpolate(ctrl, steps=30)
 
@@ -449,7 +467,7 @@ class PourWaterPrimitive(BaseManipulationPrimitive):
         self.executor.interpolate(ctrl, steps=30)
 
         # 12. Pure vertical descent back to bottle resting height via Cartesian waypoints
-        for z_wp in np.linspace(ALTITUDE_APPROACH_HIGH, ALTITUDE_GRASP_BOTTLE, 6)[1:]:
+        for z_wp in np.linspace(0.93, 0.855, 6)[1:]:
             ctrl[0:5] = self.solve_ik("A", [bottle_pos[0], bottle_pos[1], z_wp], wrist_roll=1.57)
             self.executor.interpolate(ctrl, steps=10)
 
@@ -466,7 +484,7 @@ class PourWaterPrimitive(BaseManipulationPrimitive):
         self.executor.interpolate(ctrl, steps=10)
 
         # Lift clear of bottle before opening fully
-        for z_wp in np.linspace(ALTITUDE_GRASP_BOTTLE, ALTITUDE_APPROACH_HIGH, 6)[1:]:
+        for z_wp in np.linspace(0.855, 0.93, 6)[1:]:
             ctrl[0:5] = self.solve_ik("A", [bottle_pos[0], bottle_pos[1], z_wp], wrist_roll=1.57)
             self.executor.interpolate(ctrl, steps=10)
         ctrl[5] = GRIPPER_OPEN
@@ -476,32 +494,33 @@ class PourWaterPrimitive(BaseManipulationPrimitive):
         ctrl[0:5] = ARM_A_STANDBY
         self.executor.interpolate(ctrl, steps=25)
 
-        # 14. Arm B gently sets the mug back down on table at dining station
-        mug_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "mug")
-        mug_target_high = np.array([0.12, 0.20, ALTITUDE_SAFE_TRANSIT])
+        # 14. Arm B gently sets the mug back down on table at dining station (NO DROP)
+        # Pinch target at (0.12, 0.250) places mug center precisely at (0.12, 0.200)
+        mug_target_high = np.array([0.12, 0.250, 0.88])
         ctrl[6:11] = self.solve_ik("B", mug_target_high, wrist_roll=0.0)
         self.executor.interpolate(ctrl, steps=30)
 
-        # Pure vertical descent to table resting height via Cartesian waypoints
-        for z_wp in np.linspace(ALTITUDE_SAFE_TRANSIT, ALTITUDE_GRASP_MUG, 6)[1:]:
-            ctrl[6:11] = self.solve_ik("B", [0.12, 0.20, z_wp], wrist_roll=0.0)
+        # Pure vertical descent until mug base is resting flat on table (z=0.755 brings base to 0.700)
+        for z_wp in np.linspace(0.88, 0.755, 8)[1:]:
+            ctrl[6:11] = self.solve_ik("B", [0.12, 0.250, z_wp], wrist_roll=0.0)
             self.executor.interpolate(ctrl, steps=10)
 
-        # Settle mug vertical velocity
+        # Settle mug vertical velocity so it is stationary on the tabletop
         if mug_id >= 0:
             mug_dof = self.model.body_dofadr[mug_id]
             self.data.qvel[mug_dof:mug_dof+6] = 0.0
-            for _ in range(25):
+            for _ in range(30):
                 mujoco.mj_step(self.model, self.data)
             self.data.qvel[mug_dof:mug_dof+6] = 0.0
 
+        # Detach weld while mug base is touching table - zero drop height!
         self.detach_weld("weld_mug")
-        ctrl[11] = 0.45  # Relax grip
+        ctrl[11] = 0.45  # Relax grip without swinging jaw
         self.executor.interpolate(ctrl, steps=10)
 
-        # Lift vertically before full open
-        for z_wp in np.linspace(ALTITUDE_GRASP_MUG, ALTITUDE_SAFE_TRANSIT, 6)[1:]:
-            ctrl[6:11] = self.solve_ik("B", [0.12, 0.20, z_wp], wrist_roll=0.0)
+        # Lift vertically clear of mug handle before full open
+        for z_wp in np.linspace(0.755, 0.88, 6)[1:]:
+            ctrl[6:11] = self.solve_ik("B", [0.12, 0.250, z_wp], wrist_roll=0.0)
             self.executor.interpolate(ctrl, steps=10)
         ctrl[11] = GRIPPER_OPEN
         self.executor.interpolate(ctrl, steps=10)

@@ -61,7 +61,7 @@
                 <geom type="mesh" class="collision" contype="0" conaffinity="0" pos="0.0077 0.0001 -0.0234" quat="0.707107 -0.707107 0 0" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material"/>
                 <geom type="mesh" class="visual" pos="0 -0.000218214 0.000949706" quat="0 1 0 0" mesh="wrist_roll_follower_so101_v1" material="wrist_roll_follower_so101_v1_material"/>
                 <geom name="a_follower_jaw_geom" type="mesh" class="collision" contype="0" conaffinity="0" pos="0 -0.000218214 0.000949706" quat="0 1 0 0" mesh="wrist_roll_follower_so101_v1" material="wrist_roll_follower_so101_v1_material"/>
-                <geom name="a_fixed_finger_pad" type="capsule" fromto="0.003 -0.003 -0.005 -0.003 -0.001 -0.042" size="0.005" friction="2 0.01 0.001"/>
+                <geom name="a_fixed_finger_pad" type="capsule" fromto="0.003 -0.003 -0.005 -0.003 -0.001 -0.042" size="0.005" friction="2 0.01 0.001" rgba="1 0.82 0.12 1"/>
                 
                 <!-- Precision Pinch Site at true jaw midpoint -->
                 <site group="3" name="a_pinch_site" pos="0.0045 0 -0.0382" size="0.005" rgba="0 0 0 0"/>
@@ -73,7 +73,7 @@
                   <inertial pos="-0.00157495 -0.0300244 0.0192755" mass="0.012" fullinertia="6.61427e-06 1.89032e-06 5.28738e-06 -3.19807e-07 -5.90717e-09 -1.09945e-07"/>
                   <geom type="mesh" class="visual" pos="0 0 0.0189" quat="1 0 0 0" mesh="moving_jaw_so101_v1" material="moving_jaw_so101_v1_material"/>
                   <geom name="a_moving_jaw_geom" type="mesh" class="collision" contype="0" conaffinity="0" pos="0 0 0.0189" quat="1 0 0 0" mesh="moving_jaw_so101_v1" material="moving_jaw_so101_v1_material"/>
-                  <geom name="a_moving_finger_pad" type="sphere" pos="-0.0114 -0.0270 0.0187" size="0.007" friction="2 0.01 0.001"/>
+                  <geom name="a_moving_finger_pad" type="sphere" pos="-0.0114 -0.0270 0.0187" size="0.007" friction="2 0.01 0.001" rgba="1 0.82 0.12 1"/>
                 </body>
               </body>
             </body>
