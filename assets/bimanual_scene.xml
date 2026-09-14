@@ -127,7 +127,7 @@
 
       <!-- Movable Drawer Section (Slides towards -X, out from under the roof) -->
       <body name="sliding_tray" pos="0 0 0.008">
-        <joint name="drawer_slide" type="slide" axis="-1 0 0" range="0 0.16" damping="1.5" frictionloss="0.05"/>
+        <joint name="drawer_slide" type="slide" axis="-1 0 0" range="0 0.16" damping="1.5" frictionloss="1.0"/>
         <!-- Spacious Tray Floor (Carrying the plate with ample clearance) -->
         <geom name="tray_floor" type="box" size="0.12 0.12 0.004" pos="0 0 0.004" rgba="0.75 0.62 0.48 1" friction="1.2 0.01 0.001"/>
         <!-- Rear Lip -->
@@ -154,39 +154,47 @@
     </body>
 
     <!-- 3D Realistic Clean Water Bottle (Arm A pouring into Arm B's mug) -->
-    <body name="water_bottle" pos="0.15 -0.09 0.70">
+    <body name="water_bottle" pos="0.15 -0.06 0.70">
       <freejoint/>
       <!-- Visual 3D Mesh -->
       <geom type="mesh" mesh="bottle_mesh" material="bottle_blue_mat" contype="0" conaffinity="0" group="2"/>
-      <!-- Physical Collision Cylinder -->
-      <geom name="bottle_geom" type="cylinder" size="0.025 0.080" pos="0 0 0.080" mass="0.15" friction="1.8 0.01 0.001" rgba="0 0 0 0" group="3"/>
-      <site name="bottle_site" pos="0 0 0.080" rgba="0 0 0 0" group="3"/>
+      <!-- Physical Collision Shapes: Main Body + Graspable Neck/Cap -->
+      <geom name="bottle_body" type="cylinder" size="0.024 0.050" pos="0 0 0.050" mass="0.10" friction="1.8 0.01 0.001" rgba="0 0 0 0" group="3"/>
+      <geom name="bottle_geom" type="cylinder" size="0.016 0.030" pos="0 0 0.130" mass="0.05" friction="1.8 0.01 0.001" rgba="0 0 0 0" group="3"/>
+      <site name="bottle_site" pos="0 0 0.130" rgba="0 0 0 0" group="3"/>
     </body>
 
     <!-- 3D Realistic Spoon (Dinner setting utensil) -->
-    <body name="spoon" pos="0.18 0.08 0.70">
+    <body name="spoon" pos="0.22 0.08 0.70">
       <freejoint/>
       <geom type="mesh" mesh="spoon_mesh" material="silver_metal_mat" mass="0.02" friction="1.2 0.01 0.001"/>
       <site name="spoon_site" pos="0 0 0.005" rgba="0 0 0 0" group="3"/>
     </body>
 
     <!-- 3D Realistic Fork (Dinner setting utensil) -->
-    <body name="fork" pos="0.18 0.02 0.70">
+    <body name="fork" pos="0.22 0.02 0.70">
       <freejoint/>
       <geom type="mesh" mesh="fork_mesh" material="silver_metal_mat" mass="0.02" friction="1.2 0.01 0.001"/>
       <site name="fork_site" pos="0 0 0.005" rgba="0 0 0 0" group="3"/>
     </body>
   </worldbody>
 
-  <!-- Prevent accidental contact glitches between casing and gripper contacts -->
+  <!-- Contact Exclusions: strictly for drawer casing vs plate at reset, and table vs base -->
   <contact>
     <exclude body1="plate" body2="drawer_unit"/>
-    <exclude body1="plate" body2="a_gripper_base"/>
-    <exclude body1="plate" body2="a_moving_jaw"/>
-    <exclude body1="mug" body2="b_gripper_base"/>
-    <exclude body1="mug" body2="b_moving_jaw"/>
-    <exclude body1="water_bottle" body2="a_gripper_base"/>
-    <exclude body1="water_bottle" body2="a_moving_jaw"/>
+    <exclude body1="sliding_tray" body2="drawer_unit"/>
+    <exclude body1="water_bottle" body2="sliding_tray"/>
+    <exclude body1="dining_table" body2="a_base"/>
+    <exclude body1="dining_table" body2="b_base"/>
+    <!-- Internal robot bracket self-clearances -->
+    <exclude body1="a_lower_arm" body2="a_shoulder"/>
+    <exclude body1="b_lower_arm" body2="b_shoulder"/>
+    <exclude body1="a_wrist" body2="a_shoulder"/>
+    <exclude body1="b_wrist" body2="b_shoulder"/>
+    <exclude body1="a_upper_arm" body2="a_wrist"/>
+    <exclude body1="b_upper_arm" body2="b_wrist"/>
+    <exclude body1="a_upper_arm" body2="a_gripper_base"/>
+    <exclude body1="b_upper_arm" body2="b_gripper_base"/>
   </contact>
 
   <!-- Top-level robot includes -->

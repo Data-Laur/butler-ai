@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import Any
 
 from common.types import Action, ExecutionResult, SceneState
+from stage4_bimanual.constants import (
+    ARM_A_STANDBY,
+    ARM_B_STANDBY,
+    GRIPPER_OPEN,
+)
 from stage4_bimanual.primitives import (
     OpenDrawerPrimitive,
     PickMugPrimitive,
@@ -49,8 +54,26 @@ def reset_scene(seed: int = 0) -> Any:
     model = mujoco.MjModel.from_xml_path(str(_SCENE_XML))
     data = mujoco.MjData(model)
 
+    # Initialize arms directly in tucked standby configurations (zero sweep at t=0)
+    data.qpos[36:41] = ARM_A_STANDBY
+    data.qpos[41] = GRIPPER_OPEN
+    data.qpos[42:47] = ARM_B_STANDBY
+    data.qpos[47] = GRIPPER_OPEN
+    data.ctrl[0:5] = ARM_A_STANDBY
+    data.ctrl[5] = GRIPPER_OPEN
+    data.ctrl[6:11] = ARM_B_STANDBY
+    data.ctrl[11] = GRIPPER_OPEN
+    mujoco.mj_forward(model, data)
+
     # Apply domain randomization per seed
     DomainRandomizer.randomize(model, data, seed=seed, config_path=_CONFIG_PATH)
+
+    # Maintain standby control holding torque after gravity settling
+    data.ctrl[0:5] = ARM_A_STANDBY
+    data.ctrl[5] = GRIPPER_OPEN
+    data.ctrl[6:11] = ARM_B_STANDBY
+    data.ctrl[11] = GRIPPER_OPEN
+    mujoco.mj_forward(model, data)
 
     return MuJoCoSim(model=model, data=data, seed=seed)
 
@@ -94,13 +117,13 @@ def execute(actions: list[Action], sim: Any | None = None) -> ExecutionResult:
             drawers={"top_drawer": "open"},
         )
         return ExecutionResult(
-            action_results={a.step_id: True for a in actions},
-            success=True,
+            action_results={a.step_id: False for a in actions},
+            success=False,
             final_scene=final_scene,
-            error=None,
+            error="MuJoCo is unavailable; no manipulation was executed.",
         )
 
-    executor = TrajectoryExecutor(sim.model, sim.data)
+    executor = TrajectoryExecutor(sim.model, sim.data, contact_audit=sim.contact_audit)
     action_results: dict[int, bool] = {}
 
     for action in actions:
@@ -148,16 +171,17 @@ def execute(actions: list[Action], sim: Any | None = None) -> ExecutionResult:
         objects={
             "plate": sim_objects.get("plate", (0.05, 0.0, 0.715)),
             "mug": sim_objects.get("mug", (0.06, 0.18, 0.748)),
-            "water_bottle": sim_objects.get("water_bottle", (0.12, -0.04, 0.78)),
+            "water_bottle": sim_objects.get("water_bottle", (-0.02, -0.08, 0.78)),
             "spoon": sim_objects.get("spoon", (0.18, 0.08, 0.705)),
             "fork": sim_objects.get("fork", (0.18, 0.02, 0.705)),
         },
         drawers={"top_drawer": drawer_state},
     )
 
+    collision_error = None if sim.contact_audit.ok else f"collision audit failed: {sim.contact_audit.summary()}"
     return ExecutionResult(
         action_results=action_results,
-        success=all(action_results.values()),
+        success=all(action_results.values()) and sim.contact_audit.ok,
         final_scene=final_scene,
-        error=None,
+        error=collision_error,
     )

@@ -29,8 +29,8 @@ ARM_A_GRIPPER_ACTUATOR: Final[int] = 5
 ARM_B_GRIPPER_ACTUATOR: Final[int] = 11
 
 # Gripper control values (STS3215 actuator angle in radians)
-GRIPPER_OPEN: Final[float] = 1.0
-GRIPPER_CLOSED: Final[float] = 0.1
+GRIPPER_OPEN: Final[float] = 1.60
+GRIPPER_CLOSED: Final[float] = -0.10
 GRIPPER_HALF: Final[float] = 0.6
 
 
@@ -55,21 +55,18 @@ class ArmRestPose:
         ]
 
 
-# Calibrated waypoints for tabletop manipulation
-WAYPOINT_HANDLE_REACH: Final[list[float]] = [-0.0, -0.268, 0.722, 0.53, 0.0]
-WAYPOINT_HANDLE_PULL: Final[list[float]] = [-0.0, -0.698, 0.911, 1.306, 0.0]
-WAYPOINT_DRAWER_CLEAR: Final[list[float]] = [-0.0, -0.400, 0.600, 0.60, 0.0]
+# Tabletop Standard Altitude Planes (meters)
+ALTITUDE_SURFACE: Final[float] = 0.70
+ALTITUDE_GRASP_PLATE: Final[float] = 0.730   # Gripper pinch site height for plate rim contact
+ALTITUDE_GRASP_MUG: Final[float] = 0.765     # Pinch site height for mug upper body grasp
+ALTITUDE_GRASP_BOTTLE: Final[float] = 0.860  # Pinch site height for bottle neck grasp
+ALTITUDE_SAFE_TRANSIT: Final[float] = 0.95   # Unobstructed 3D airspace above all tabletop objects
+ALTITUDE_APPROACH_HIGH: Final[float] = 0.96  # High waypoint for approaching tall obstacles
 
-WAYPOINT_PLATE_APPROACH: Final[list[float]] = [-0.0, -0.463, 0.521, 0.624, 0.0]
-WAYPOINT_PLATE_GRASP: Final[list[float]] = [-0.0, -0.028, 0.552, 0.438, 0.0]
-WAYPOINT_PLATE_TABLE_CENTER: Final[list[float]] = [-0.804, 0.215, 0.368, 0.216, -0.025]
+# Standby configurations: compactly tucked back, clear of central tabletop workspace
+ARM_A_STANDBY: Final[list[float]] = [-0.10, -0.80, 1.40, -0.60, 0.0]
+ARM_B_STANDBY: Final[list[float]] = [ 0.10, -0.80, 1.40, -0.60, 0.0]
 
-WAYPOINT_MUG_APPROACH: Final[list[float]] = [0.177, -0.740, 0.714, 0.718, 0.005]
-WAYPOINT_MUG_GRASP: Final[list[float]] = [0.179, -0.424, 0.802, 0.572, 0.005]
-WAYPOINT_MUG_HOLD: Final[list[float]] = [0.179, -0.556, 0.776, 0.634, 0.005]
-
-WAYPOINT_BOTTLE_GRASP: Final[list[float]] = [-0.573, 0.171, 0.254, 0.145, -0.019]
-WAYPOINT_POUR_POSITION: Final[list[float]] = [-0.993, 0.544, -0.291, -0.180, 0.0]
-
-DRAWER_SLIDE_MAX_METERS: Final[float] = 0.12
+DRAWER_SLIDE_MAX_METERS: Final[float] = 0.15
 DEFAULT_SUBSTEPS_PER_TRAJECTORY: Final[int] = 60
+

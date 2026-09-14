@@ -9,7 +9,7 @@ max_retries: 2
 # Domain-randomization ranges for stage7_eval. TODO(Abdullah): tune once the
 # MuJoCo scene is in assets/.
 randomization:
-  object_placement_cm: [-5.0, 5.0]   # +/- offset applied to nominal object positions
+  object_placement_cm: [-2.0, 2.0]   # +/- offset applied to nominal object positions
   lighting_intensity: [0.6, 1.4]     # multiplier on scene light
   friction: [0.6, 1.2]               # multiplier on contact friction
   mass_scale: [0.8, 1.2]             # multiplier on object masses

@@ -30,6 +30,7 @@ class DLSInverseKinematics:
     ):
         self.model = model
         self.data = data
+        self.ik_data = mujoco.MjData(model) if (HAS_MUJOCO and model is not None) else None
         self.damping = damping
         self.step_size = step_size
         self.max_iterations = max_iterations
@@ -43,11 +44,20 @@ class DLSInverseKinematics:
     ) -> tuple[bool, list[float], float]:
         """Compute joint angles (radians) to reach target_pos_m with specified wrist roll.
 
+        Performs IK on an isolated scratch data copy so the live simulation state
+        (qpos, qvel, equality constraints) is never mutated or teleported.
+
         Returns:
             (converged, joint_angles, residual_distance_m)
         """
         if not HAS_MUJOCO or self.model is None or self.data is None:
             return False, [0.0] * 5, 999.0
+
+        if self.ik_data is None:
+            self.ik_data = mujoco.MjData(self.model)
+
+        # Synchronize scratch data with current live simulation configuration
+        self.ik_data.qpos[:] = self.data.qpos[:]
 
         target = np.asarray(target_pos_m, dtype=np.float64)
         prefix = arm.lower()
@@ -70,12 +80,16 @@ class DLSInverseKinematics:
             for j in joint_names
         ]
 
+        # Preset wrist roll target on scratch data
+        if len(jnt_qpos_indices) >= 5:
+            self.ik_data.qpos[jnt_qpos_indices[4]] = wrist_roll
+
         jacp = np.zeros((3, self.model.nv), dtype=np.float64)
         converged = False
 
         for _ in range(self.max_iterations):
-            mujoco.mj_forward(self.model, self.data)
-            current_pos = self.data.site_xpos[site_id]
+            mujoco.mj_forward(self.model, self.ik_data)
+            current_pos = self.ik_data.site_xpos[site_id]
             error = target - current_pos
             err_norm = float(np.linalg.norm(error))
 
@@ -83,7 +97,7 @@ class DLSInverseKinematics:
                 converged = True
                 break
 
-            mujoco.mj_jacSite(self.model, self.data, jacp, None, site_id)
+            mujoco.mj_jacSite(self.model, self.ik_data, jacp, None, site_id)
             J = jacp[:, jnt_dof_indices]
 
             # Damped Least Squares update: dq = J^T * (J * J^T + lambda^2 * I)^(-1) * error
@@ -91,16 +105,16 @@ class DLSInverseKinematics:
             delta_q = J.T @ np.linalg.solve(J @ J.T + lambda_matrix, error)
 
             for i, q_idx in enumerate(jnt_qpos_indices):
-                self.data.qpos[q_idx] += self.step_size * delta_q[i]
+                self.ik_data.qpos[q_idx] += self.step_size * delta_q[i]
 
                 # Clamp to joint range limits
                 joint_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, joint_names[i])
                 limit_range = self.model.jnt_range[joint_id]
-                self.data.qpos[q_idx] = np.clip(self.data.qpos[q_idx], limit_range[0], limit_range[1])
+                self.ik_data.qpos[q_idx] = np.clip(self.ik_data.qpos[q_idx], limit_range[0], limit_range[1])
 
-        mujoco.mj_forward(self.model, self.data)
-        final_pos = self.data.site_xpos[site_id]
+        mujoco.mj_forward(self.model, self.ik_data)
+        final_pos = self.ik_data.site_xpos[site_id]
         final_error = float(np.linalg.norm(target - final_pos))
-        joint_angles = [float(self.data.qpos[idx]) for idx in jnt_qpos_indices]
+        joint_angles = [float(self.ik_data.qpos[idx]) for idx in jnt_qpos_indices]
 
         return converged or (final_error < 0.01), joint_angles, final_error

@@ -46,7 +46,7 @@ def run_once(command: str, seed: int = 0, max_retries: int | None = None) -> Run
         log.append(f"              {step.id}. {step.action.value:<12} arm {step.arm}{deps}")
 
     log.append("[perceive] stage2_perception.perceive(get_camera_frame(sim))")
-    scene = perceive(get_camera_frame(sim))
+    scene = perceive(get_camera_frame(sim), sim=sim)
     log.append(f"           -> {len(scene.objects)} objects: {', '.join(scene.objects)}")
     log.append(f"           -> drawers: {dict(scene.drawers)}")
 
@@ -66,13 +66,15 @@ def run_once(command: str, seed: int = 0, max_retries: int | None = None) -> Run
             log.append(f"           -> error: {result.error}")
 
         log.append("[verify]   stage6_verify.verify(perceive(get_camera_frame(sim)), task)")
-        scene_after = perceive(get_camera_frame(sim))
+        scene_after = perceive(get_camera_frame(sim), sim=sim)
         verdict = verify(scene_after, task)
         log.append(f"           -> ok={verdict.ok} replan={verdict.replan} ({verdict.details})")
 
-        if verdict.ok:
+        if result.success and verdict.ok:
             success = True
             break
+        if not result.success:
+            log.append("           -> execution did not satisfy physics/contact checks")
         if verdict.replan and attempts < max_retries:
             log.append(f"           -> replan requested: retrying ({attempts + 1}/{max_retries})")
             continue

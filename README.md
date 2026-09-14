@@ -11,6 +11,14 @@ Voice command in, table set. Example command:
 > "Open the top drawer, pick up the plate with arm A, place it on the table,
 > pick up the mug with arm B, pour water into the mug with arm A."
 
+Read [the implementation approach and honest current-status checklist](docs/IMPLEMENTATION_APPROACH.md)
+before running evaluation. It documents the physics/contact gates, the
+simulation-state perception baseline, and what must be completed before
+claiming VLA or OpenVINO results.
+
+For the visual, per-skill ACT data-collection workflow, see
+[DATA_COLLECTION.md](docs/DATA_COLLECTION.md).
+
 **Voice input is powered by Speechmatics** (ASR) with Claude for instruction
 parsing — see `stage1_voice/`.
 

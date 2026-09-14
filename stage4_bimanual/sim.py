@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Any
 import yaml
 
+from stage4_bimanual.safety import ContactAudit
+
 try:
     import mujoco
     import numpy as np
@@ -17,6 +19,7 @@ except ImportError:
 class FakeSim:
     """Fallback stub when MuJoCo is not available."""
     seed: int
+    contact_audit: Any = None
 
 
 class DomainRandomizer:
@@ -90,19 +93,27 @@ class DomainRandomizer:
         mass_scale = rng.uniform(mass_range[0], mass_range[1])
         model.body_mass[:] *= mass_scale
 
-        # Settle simulation under gravity
+        # Settle simulation under gravity and zero velocities
         for _ in range(50):
             mujoco.mj_step(model, data)
+        data.qvel[:] = 0.0
 
 
 class MuJoCoSim:
     """Encapsulates MuJoCo simulation environment, rendering, and state queries."""
 
-    def __init__(self, model: Any, data: Any, seed: int):
+    def __init__(
+        self,
+        model: Any,
+        data: Any,
+        seed: int,
+        contact_audit: ContactAudit | None = None,
+    ):
         self.model = model
         self.data = data
         self.seed = seed
         self._renderer: Any = None
+        self.contact_audit = contact_audit or ContactAudit()
 
     def set_weld(self, weld_name: str, active: bool) -> None:
         """Toggle an equality weld constraint dynamically."""
@@ -161,7 +172,7 @@ class MuJoCoSim:
             return {
                 "plate": (0.05, 0.0, 0.715),
                 "mug": (0.06, 0.18, 0.748),
-                "water_bottle": (0.12, -0.04, 0.78),
+                "water_bottle": (-0.02, -0.08, 0.78),
                 "spoon": (0.18, 0.08, 0.705),
                 "fork": (0.18, 0.02, 0.705),
             }
