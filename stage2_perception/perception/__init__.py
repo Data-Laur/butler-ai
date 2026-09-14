@@ -4,8 +4,6 @@ from typing import Any
 
 from common.types import SceneState
 
-from .scene_pipeline import ScenePipeline
-
 
 IMAGE_CORNERS = [(80.0, 60.0), (560.0, 60.0), (560.0, 420.0), (80.0, 420.0)]
 TABLE_CORNERS = [(0.0, 0.0), (0.8, 0.0), (0.8, 0.6), (0.0, 0.6)]
@@ -33,7 +31,21 @@ def perceive(image: Any | None = None, sim: Any | None = None) -> SceneState:
 			drawers={"top_drawer": sim.get_drawer_state()},
 		)
 	if image is None:
-		raise ValueError("A camera image is required for real Stage 2 perception.")
+		# CONTRACTS.md: perceive must accept None in sim, and the stub pipeline
+		# must run with only pydantic + pyyaml + numpy. Return the nominal scene
+		# in the MuJoCo world frame of assets/bimanual_scene.xml (table top z=0.70).
+		return SceneState(
+			objects={
+				"plate": (0.05, 0.00, 0.715),
+				"mug": (0.06, 0.18, 0.748),
+				"water_bottle": (0.12, -0.04, 0.78),
+				"spoon": (0.18, 0.08, 0.705),
+				"fork": (0.18, 0.02, 0.705),
+			},
+			drawers={"top_drawer": "closed"},
+		)
+
+	from .scene_pipeline import ScenePipeline  # heavy (numpy) — keep off module top level
 
 	pipeline = ScenePipeline()
 	pipeline.compute_homography_from_points(IMAGE_CORNERS, TABLE_CORNERS)
