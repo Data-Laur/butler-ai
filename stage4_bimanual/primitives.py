@@ -433,12 +433,12 @@ class OpenDrawerPrimitive(BaseManipulationPrimitive):
         if not self._grasp_drawer_handle(ctrl):
             return self._fail("drawer handle grasp not established")
 
-        # 4. Pull along -X by 11 cm (sliding the tray open more so plate is fully exposed)
+        # 4. Pull along -X by 13 cm (sliding the tray open more so plate is fully exposed)
         site_now = np.copy(self.site_pos("a_pinch_site"))
-        pull_target = site_now - np.array([0.11, 0.0, 0.0])
+        pull_target = site_now - np.array([0.13, 0.0, 0.0])
         q_pull = self.solve_ik("A", pull_target, wrist_roll=ARM_A_DRAWER_HANDLE_GRASP[4])
         ctrl[0:5] = q_pull
-        self.move(ctrl, 1.5)
+        self.move(ctrl, 1.6)
 
         drawer_joint = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, "drawer_slide")
         if drawer_joint < 0:
