@@ -29,7 +29,12 @@ def _config_max_retries() -> int:
         return _FALLBACK_MAX_RETRIES
 
 
-def run_once(command: str, seed: int = 0, max_retries: int | None = None) -> RunResult:
+def run_once(
+    command: str,
+    seed: int = 0,
+    max_retries: int | None = None,
+    executor_factory=None,
+) -> RunResult:
     """Run the full pipeline once for a seed: staged planning + verify->replan recovery."""
     from stage1_voice import parse_text
     from stage2_perception import perceive
@@ -87,7 +92,7 @@ def run_once(command: str, seed: int = 0, max_retries: int | None = None) -> Run
                 )
 
             log.append("[execute]  stage4_bimanual.execute(actions, sim)")
-            execution = execute(list(result.actions), sim)
+            execution = execute(list(result.actions), sim, executor_factory=executor_factory)
             ok = sum(execution.action_results.values())
             log.append(f"           -> {ok}/{len(result.actions)} actions succeeded")
             if execution.error:

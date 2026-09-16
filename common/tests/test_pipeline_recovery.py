@@ -60,7 +60,7 @@ def install_stages(monkeypatch):
                 [Action(step_id=1, action=ActionType.PICK, arm="B", object="mug", target_pose=scene.objects["mug"])]
             )
 
-        def execute(actions, sim=None):
+        def execute(actions, sim=None, executor_factory=None):
             calls["executions"] += 1
             scripted = execution_success.pop(0)  # bool for all actions, or dict step_id -> bool
             per_action = scripted if isinstance(scripted, dict) else {a.step_id: scripted for a in actions}
