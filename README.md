@@ -89,6 +89,24 @@ including exactly how language + vision + task state combine into the next actio
 
 ---
 
+## 10/10 Seeds Passed - Failure Analysis & Successful Execution:
+
+#### Failed Execution - Failure Case
+
+https://github.com/user-attachments/assets/7bf3c6d7-2b3d-4fce-b3e6-2b0b5f90c37b
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
+
+#### Successful Execution - Final Validated Demo
+
+https://github.com/user-attachments/assets/b8239dee-16ba-4cb7-a634-844290a1e04e
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
+
 ## The task
 
 | Step | Primitive | Arm | Result |
@@ -150,17 +168,6 @@ python scripts/evaluate.py --seeds 10 --output evaluation_report.json
 ```
 
 ---
-
-## Media
-
-| | |
-|---|---|
-| ![Open drawer](docs/visualizations/open_drawer.gif) | **Open drawer** — Arm A |
-| ![Pick plate](docs/visualizations/pick_plate.gif) | **Pick plate** — Arm A |
-| ![Place plate](docs/visualizations/place_plate.gif) | **Place plate** — Arm A |
-| ![Pick mug](docs/visualizations/pick_mug.gif) | **Pick mug** — Arm B |
-| ![Pour water](docs/visualizations/pour_water.gif) | **Complementary pour** — both arms |
-| ![Final state](docs/visualizations/final_table_set.png) | **Final table state** |
 
 ### Still needed
 
@@ -326,7 +333,7 @@ map 1:1 onto the original role plan.
 **Intel** and **lablab.ai** for the [Physical AI Online Challenge](https://lablab.ai/ai-hackathons/ai-infra-summit-hackathon/)
 and OpenVINO/Core Ultra tooling · **Hugging Face LeRobot** for ACT and `LeRobotDataset` ·
 **TheRobotStudio / SO-ARM100** for the SO-101 models used directly in `assets/SO-ARM100/` ·
-**MuJoCo** · **Anthropic Claude** and **Speechmatics**.
+**MuJoCo** · **Anthropic Claude** and **Speechmatics**
 
 ## License
 
