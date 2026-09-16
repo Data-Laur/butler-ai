@@ -119,12 +119,6 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
   <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
 </div>
 
-<img width="709" height="580" alt="image" src="https://github.com/user-attachments/assets/1dd09a0a-1dd0-47b6-ba50-9df2d55a581a" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
 <img width="768" height="728" alt="image" src="https://github.com/user-attachments/assets/43e0d4fe-4897-48d3-a1f3-6251367aa445" />
 
 <div align="center">
