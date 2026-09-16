@@ -893,10 +893,8 @@ class PourWaterPrimitive(BaseManipulationPrimitive):
         offset = self._mouth() - self.site_pos(side_site)         # mouth relative to the grasp point (upright)
         site_start = mouth_start - offset
         cruise = np.array([site_start[0], site_start[1], max(lifted[2], site_start[2] + 0.03)])
-        _, res_c, ok_c = self.solve_ik_checked("A", cruise, roll_grasp, pitch=pitch_g, site=side_site)
-        pitch_transit = pitch_g if ok_c else None
-        worst = self.move_line("A", ctrl, lifted, cruise, 5, 1.5, roll_grasp, pitch=pitch_transit, site=side_site)
-        worst = max(worst, self.move_line("A", ctrl, cruise, site_start, 3, 0.7, roll_grasp, pitch=pitch_transit, site=side_site))
+        worst = self.move_line("A", ctrl, lifted, cruise, 5, 1.5, roll_grasp, pitch=pitch_g, site=side_site)
+        worst = max(worst, self.move_line("A", ctrl, cruise, site_start, 3, 0.7, roll_grasp, pitch=pitch_g, site=side_site))
         if worst > 0.02:
             return self._fail(f"pour position unreachable (residual {worst * 1000:.0f} mm)")
 
@@ -963,10 +961,10 @@ class PourWaterPrimitive(BaseManipulationPrimitive):
 
         mark("pour_done")
         site_now = self.site_pos(side_site)
-        self.move_line("A", ctrl, site_now, cruise, 3, 0.7, roll_grasp, pitch=pitch_transit, site=side_site)
+        self.move_line("A", ctrl, site_now, cruise, 3, 0.7, roll_grasp, pitch=pitch_g, site=side_site)
         above_home = np.array([lifted[0], lifted[1], cruise[2]])
-        self.move_line("A", ctrl, cruise, above_home, 5, 1.5, roll_grasp, pitch=pitch_transit, site=side_site)
-        self.move_line("A", ctrl, above_home, lifted, 2, 0.4, roll_grasp, pitch=pitch_transit, site=side_site)
+        self.move_line("A", ctrl, cruise, above_home, 5, 1.5, roll_grasp, pitch=pitch_g, site=side_site)
+        self.move_line("A", ctrl, above_home, lifted, 2, 0.4, roll_grasp, pitch=pitch_g, site=side_site)
         mark("above_home")
         bottle_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "water_bottle")
         self.move_line(
