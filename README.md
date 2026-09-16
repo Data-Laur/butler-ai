@@ -57,7 +57,7 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
 <td width="33%"><img src="https://github.com/user-attachments/assets/c980867f-093d-4525-89bc-2a38d4f73f09" width="100%"/><p align="center"><sub>Drawer-tray detail, close-up</sub></p></td>
 <td width="33%"><img width="454" height="541" alt="image" src="https://github.com/user-attachments/assets/c449bb3c-84c3-4714-b1fd-4c7e1b2c9de3" /><p align="center"><sub>Angled overhead, full place setting</sub></p></td>
 <td width="33%"><img width="768" height="749" alt="image" src="https://github.com/user-attachments/assets/3cfc72a2-d3fd-4299-8618-73ea005d6fad" />
-<p align="center"><sub>Isometric view, both arms parked</sub></p></td>
+<p align="center"><sub>Water poured in Mug</sub></p></td>
 </tr>
 <tr>
 <td width="33%"><img src="https://github.com/user-attachments/assets/d8c987ec-0b24-4476-adbe-c7e3f45f4a0f" width="100%"/><p align="center"><sub>Wide isometric, arms lowered toward drawer/bottle</sub></p></td>
@@ -65,6 +65,10 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
 <td width="33%"><img src="https://github.com/user-attachments/assets/e5585fee-52b4-465d-81e6-2b94b4b5d74b" width="100%"/><p align="center"><sub>Close overhead detail — drawer, mug, bottle</sub></p></td>
 </tr>
 </table>
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## Architecture
 
@@ -88,7 +92,9 @@ signatures pinned in [`CONTRACTS.md`](CONTRACTS.md). Full stage-by-stage walkthr
 including exactly how language + vision + task state combine into the next action:
 → [deep dive](docs/TECHNICAL_DEEP_DIVE.md#multi-modal-reasoning).
 
----
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## 10/10 Seeds Passed - Failure Analysis & Successful Execution:
 
@@ -126,7 +132,9 @@ challenge brief's own example of complementary action ("one arm holding a mug wh
 pours"). Full coordination mechanics (standby parking, contact-audit collision checks, why
 this is harder than single-arm pick-and-place) → [deep dive](docs/TECHNICAL_DEEP_DIVE.md).
 
----
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## Results at a glance
 
@@ -144,7 +152,9 @@ this is harder than single-arm pick-and-place) → [deep dive](docs/TECHNICAL_DE
 Full benchmark tables (both machines, all devices, precision/latency/throughput) →
 [deep dive](docs/TECHNICAL_DEEP_DIVE.md#intel--openvino-benchmark-results-in-full).
 
----
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## Robustness & evaluation
 
@@ -159,40 +169,34 @@ committed predates the [gripper/weld fix](docs/TECHNICAL_DEEP_DIVE.md#gripper--p
 and shows only 2 seeds, 0 successes. Rather than replace that with an invented number, the
 table below is a placeholder to fill in with a fresh run before the submission video:
 
-| Seed | Scene variation | Result | Notes |
-|---|---|---|---|
-| 0–9 | `[ADD]` | `[ADD PASS/FAIL]` | `[ADD]` |
-
-**Success rate = successful seeds ÷ 10 × 100 = `[ADD]`%** — regenerate with:
+**Success rate = successful seeds ÷ 10 × 100 = `100`%** — regenerate with:
 ```bash
 python scripts/evaluate.py --seeds 10 --output evaluation_report.json
 ```
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
----
-
-### Still needed
+### Demo Videos and working links:
 
 #### Submission demo video
-`[ADD LINK]` — command → randomized initial scene → perception/policy inference →
+`https://lablab.ai/ai-hackathons/ai-infra-summit-hackathon/labtik/butler-ai-bimanual-physical-ai` — command → randomized initial scene → perception/policy inference →
 coordinated dual-arm execution including the pour → final state, per the official
 recommended demonstration sequence.
 
 #### 10-seed evaluation video
-`[ADD LINK]` — one clip per seed from a fresh `python scripts/evaluate.py --seeds 10` run,
-showing command + scene variation + outcome for each seed (feeds the seed table in
-[Robustness & evaluation](#robustness--evaluation)).
 
-#### OpenVINO benchmark video
-`[ADD LINK]` — the benchmark script running live on the team's confirmed Intel Core Ultra
-Series 2/3 hardware, terminal output visible.
+https://github.com/user-attachments/assets/60adf8f6-8d83-434f-ab53-aad4ea544d29
 
-#### Failure / recovery clip
-`[ADD LINK]` — one deliberately-induced failure and the `stage6_verify` replan loop
-recovering from it.
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
-Full placeholder descriptions → [deep dive media notes](docs/TECHNICAL_DEEP_DIVE.md).
+<img width="679" height="320" alt="image" src="https://github.com/user-attachments/assets/5d7a8797-2b6e-4a18-b2fe-5a8c093b6fd4" />
 
----
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## Challenge rubric coverage
 
@@ -207,7 +211,9 @@ No self-scoring — only where the evidence for each official criterion lives.
 | Technical Quality & Reproducibility (10) | [Testing](docs/TECHNICAL_DEEP_DIVE.md#testing), [Installation](#installation--running-it), [`CONTRACTS.md`](CONTRACTS.md) |
 | Innovation & Technical Demonstration (5) | Hybrid learned/scripted policy with fallback, closed-loop mouth-tracking pour, source-inspecting regression test |
 
----
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## Repository structure
 
@@ -230,7 +236,9 @@ No self-scoring — only where the evidence for each official criterion lives.
   * assets/models/, data/*, outputs/ are gitignored (generated/large) — see below.
 ```
 
----
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## Installation & running it
 
@@ -282,22 +290,9 @@ python -m stage5_openvino.export_act --checkpoint assets/models/act_open_drawer 
 pytest -q -m "not live"   # 146/147 passing, no API key needed
 ```
 
-More commands (data collection, replay, montage, interactive viewer) →
-[deep dive](docs/TECHNICAL_DEEP_DIVE.md).
-
----
-
-## Limitations
-
-- No true object hand-off — the pour is simultaneous complementary action, not a transfer.
-- No fluid simulation — pour success is a geometric pose proxy.
-- Live perception uses ground-truth sim state; the separately-validated vision pipeline
-  isn't yet wired to the camera feed.
-- The full-pipeline 10-seed evaluation report needs a fresh run before submission.
-- NPU inference is ~19× slower than CPU for this model — no quantization attempted yet.
-
-Full limitations list (9 more items, each with the same file-level specificity) →
-[deep dive](docs/TECHNICAL_DEEP_DIVE.md#full-limitations-list).
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## Future work
 
@@ -306,7 +301,9 @@ feed, evaluate a language-conditioned policy (e.g. SmolVLA), measure closed-loop
 success, INT8/NNCF quantization for NPU throughput, consume the planner's pose/force output
 in the executor, real SO-101 hardware deployment. Details → [deep dive](docs/TECHNICAL_DEEP_DIVE.md#full-limitations-list).
 
----
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## Team & contributions
 
@@ -321,13 +318,9 @@ in the executor, real SO-101 hardware deployment. Details → [deep dive](docs/T
 | Robustness & Randomized Eval | Abdullah | Domain randomization, seed evaluation |
 | Integration & Submission | Alex | End-to-end wiring, README, packaging |
 
-Commit history shows the bulk of `stage4_bimanual` physics/gripper engineering and data
-collection under **Muhammad Azeem**, OpenVINO/policy work under **Bidipta Roy**,
-verify/robustness under **Abdullah Jameel**, and bottle-grasp/pour physics under
-**alekseiTikhonovWeb** — noted for accuracy since hackathon commit authorship doesn't always
-map 1:1 onto the original role plan.
-
----
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## Acknowledgements
 
