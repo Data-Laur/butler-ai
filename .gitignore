@@ -26,7 +26,15 @@ data/lerobot_bimanual_v2/
 data/raw_skill_demos/
 data/raw_skill_demos_*/
 data/test_collection/
+data/butler_demos/
+data/*.zip
 *.parquet
+
+# Generated benchmark/export artifacts (regenerate via stage5_openvino)
+outputs/
+
+# Stray driver/compiler debug dumps
+kernel.errors.txt
 
 # Video recordings & generated animations
 *.mp4

@@ -49,5 +49,5 @@ hardware:
   target: intel_core_ultra           # OpenVINO device target for stage5
 
 models:
-  policy_checkpoint: assets/models/policy.safetensors   # TODO(Bidipta): after training
-  openvino_ir: assets/models/policy_openvino.xml        # TODO(Lauren): after conversion
+  policy_checkpoint: assets/models/act_open_drawer
+  openvino_ir: assets/models/openvino_open_drawer/act_policy.xml

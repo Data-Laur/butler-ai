@@ -412,9 +412,57 @@ class OpenDrawerPrimitive(BaseManipulationPrimitive):
                     return True
         return False
 
-    def execute(self) -> bool:
+    def execute_learned_act(self, max_steps: int = 120) -> bool:
+        """Drive Arm A directly using the learned LeRobot ACT motor policy."""
+        try:
+            import os
+            from stage3_policy.learned.inference import select_motor_policy, configured_checkpoint
+            selection = select_motor_policy(configured_checkpoint(), load=True)
+            if selection.policy is None:
+                return False
+            policy = selection.policy
+            policy.reset()
+
+            renderer = mujoco.Renderer(self.model, height=480, width=640)
+            drawer_joint = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, "drawer_slide")
+            drawer_qpos_idx = self.model.jnt_qposadr[drawer_joint] if drawer_joint >= 0 else None
+            initial_pos = float(self.data.qpos[drawer_qpos_idx]) if drawer_qpos_idx is not None else 0.0
+
+            instruction = "Open the top drawer with arm A."
+            for _ in range(max_steps):
+                joint_positions = np.asarray(self.data.qpos[36:48], dtype=np.float32).tolist()
+                renderer.update_scene(self.data, camera="overhead_cam")
+                overhead_rgb = renderer.render().copy()
+
+                action = policy.act(joint_positions, overhead_rgb, instruction)
+                self.data.ctrl[:12] = np.asarray(action, dtype=np.float64)
+                for _ in range(20):
+                    mujoco.mj_step(self.model, self.data)
+
+                if drawer_qpos_idx is not None:
+                    slide = float(self.data.qpos[drawer_qpos_idx]) - initial_pos
+                    if slide >= 0.040:
+                        return True
+            if drawer_qpos_idx is not None:
+                return (float(self.data.qpos[drawer_qpos_idx]) - initial_pos) >= 0.040
+            return True
+        except Exception as exc:
+            print(f"[stage4_bimanual] Learned ACT execution failed: {exc}")
+            return False
+
+    def execute(self, use_learned: bool | None = None) -> bool:
         if not HAS_MUJOCO or self.model is None or self.data is None:
             return True
+
+        import os
+        should_use_learned = use_learned or (use_learned is None and os.environ.get("USE_LEARNED_ACT", "").lower() in ("1", "true"))
+        if should_use_learned:
+            print("[stage4_bimanual] Executing open_drawer with learned ACT policy...")
+            ok = self.execute_learned_act()
+            if ok:
+                print("[stage4_bimanual] Learned ACT policy successfully opened drawer!")
+                return True
+            print("[stage4_bimanual] Learned ACT policy fell short of threshold; falling back to scripted primitive.")
 
         # Ensure Arm B is parked safely in standby pose
         ctrl = np.copy(self.data.ctrl)

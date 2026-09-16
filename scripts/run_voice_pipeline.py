@@ -31,6 +31,10 @@ import speech_recognition as sr
 from common import EXAMPLE_COMMAND
 from common.pipeline import run_once
 from stage1_voice.voice import parse_command, parse_text, transcribe_audio
+from stage4_bimanual.trajectory import TrajectoryExecutor
+
+import mujoco
+import mujoco.viewer
 
 
 def record_live_microphone(seconds: int = 5) -> str:
@@ -97,35 +101,39 @@ def main() -> int:
     # 2. Execution mode
     executor_factory = None
 
-    if args.view:
-        import mujoco.viewer
-        from scripts.visualize_run import ViewerSyncTrajectoryExecutor
+    if args.view or args.record:
+        from PIL import Image
+        from scripts.record_evaluation import RecordingTrajectoryExecutor, _make_camera, WIDTH, HEIGHT
 
-        def make_viewer_executor(model, data, contact_audit=None):
-            # Launch passive viewer if not already open
-            if not hasattr(make_viewer_executor, "_viewer") or make_viewer_executor._viewer is None:
-                make_viewer_executor._viewer = mujoco.viewer.launch_passive(model, data)
-            return ViewerSyncTrajectoryExecutor(model, data, make_viewer_executor._viewer, contact_audit)
+        if args.record:
+            args.record.parent.mkdir(parents=True, exist_ok=True)
 
-        executor_factory = make_viewer_executor
-
-    elif args.record:
-        from scripts.record_evaluation import RecordingTrajectoryExecutor, _make_camera, WIDTH, HEIGHT, FPS
-        from stage4_bimanual.sim import MuJoCoSim
-        import mujoco
-
-        args.record.parent.mkdir(parents=True, exist_ok=True)
         rec_cls = RecordingTrajectoryExecutor
         rec_cls.renderer = None
         rec_cls.camera = _make_camera()
         rec_cls.frames = []
+        viewer_holder = {"viewer": None}
 
-        def make_rec_executor(model, data, contact_audit=None):
-            if rec_cls.renderer is None:
-                rec_cls.renderer = mujoco.Renderer(model, height=HEIGHT, width=WIDTH)
-            return rec_cls(model, data, contact_audit=contact_audit)
+        class CombinedExecutor(TrajectoryExecutor):
+            def __init__(self, model, data, contact_audit=None):
+                super().__init__(model, data, contact_audit=contact_audit)
+                if args.view and (viewer_holder["viewer"] is None or not viewer_holder["viewer"].is_running()):
+                    viewer_holder["viewer"] = mujoco.viewer.launch_passive(model, data)
+                self._viewer = viewer_holder["viewer"]
+                if args.record and rec_cls.renderer is None:
+                    rec_cls.renderer = mujoco.Renderer(model, height=HEIGHT, width=WIDTH)
+                self._tick = 0
 
-        executor_factory = make_rec_executor
+            def _on_step(self) -> None:
+                if self._viewer is not None and self._viewer.is_running():
+                    self._viewer.sync()
+                if args.record and rec_cls.renderer is not None:
+                    if self._tick % 3 == 0:
+                        rec_cls.renderer.update_scene(self.data, camera=rec_cls.camera)
+                        rec_cls.frames.append(Image.fromarray(rec_cls.renderer.render()))
+                    self._tick += 1
+
+        executor_factory = CombinedExecutor
 
     # 3. Run pipeline end-to-end
     t0 = time.time()

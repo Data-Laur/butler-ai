@@ -9,6 +9,12 @@ import json
 import logging
 import os
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from pydantic import ValidationError
 
 from common import EXAMPLE_COMMAND
