@@ -1,6 +1,6 @@
-<p align="center">
+<!-- <p align="center">
   <img src="docs/visualizations/bimanual_simulation_full.gif" alt="Butler AI — full bimanual sequence" width="720">
-</p>
+</p> -->
 
 <h1 align="center">Butler AI</h1>
 <p align="center"><b>Two simulated SO-101 arms set a dinner table from a spoken command.</b></p>
