@@ -388,6 +388,31 @@ class BaseManipulationPrimitive(ABC):
 class OpenDrawerPrimitive(BaseManipulationPrimitive):
     """Arm A moves to the calibrated handle picking point, grips the D-handle, and pulls the drawer open."""
 
+    def _grasp_drawer_handle(self, ctrl: np.ndarray) -> bool:
+        """Close on the D-handle and weld ONLY once both jaws actually touch it.
+
+        Never attaches without contact: a weld is an approximation of a grasp, not
+        a teleport. If the calibrated pose missed the handle, re-approach using the
+        observed drawer_handle_site so the correction follows the real object.
+        """
+        if self.close_until_contact("A", ctrl, "weld_drawer", floor=GRIPPER_CLOSED, squeeze=0.03):
+            if self.attach_weld("weld_drawer", require_both_jaws=True):
+                return True
+
+        for nudge in ((0.0, 0.0, 0.0), (0.008, 0.0, 0.0), (0.0, 0.0, -0.006)):
+            ctrl[5] = ARM_A_DRAWER_HANDLE_GRIPPER
+            self.move(ctrl, 0.3)
+            target = np.copy(self.site_pos("drawer_handle_site")) + np.asarray(nudge)
+            q, _, ok = self.solve_ik_checked("A", target, ARM_A_DRAWER_HANDLE_GRASP[4])
+            if not ok:
+                continue
+            ctrl[0:5] = q
+            self.move(ctrl, 0.8)
+            if self.close_until_contact("A", ctrl, "weld_drawer", floor=GRIPPER_CLOSED, squeeze=0.03):
+                if self.attach_weld("weld_drawer", require_both_jaws=True):
+                    return True
+        return False
+
     def execute(self) -> bool:
         if not HAS_MUJOCO or self.model is None or self.data is None:
             return True
@@ -397,26 +422,17 @@ class OpenDrawerPrimitive(BaseManipulationPrimitive):
         ctrl[6:11] = ARM_B_STANDBY
         ctrl[11] = GRIPPER_OPEN
 
-        # 1. Approach handle picking point with jaws open around the handle bar
+        # 1. Approach the calibrated handle picking point with the jaws open.
         ctrl[0:5] = ARM_A_DRAWER_HANDLE_GRASP
         ctrl[5] = ARM_A_DRAWER_HANDLE_GRIPPER
         self.move(ctrl, 1.2)
 
-        # 2. Firmly clamp gripper around the handle bar
-        ctrl[5] = GRIPPER_CLOSED
-        self.move(ctrl, 0.4)
-
-        # 3. Attach weld constraint dynamically to lock gripper and sliding tray
-        weld_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_EQUALITY, "weld_drawer")
-        if weld_id >= 0:
-            b1 = self.model.eq_obj1id[weld_id]
-            b2 = self.model.eq_obj2id[weld_id]
-            r1 = self.data.xmat[b1].reshape(3, 3)
-            delta_world = self.data.xpos[b2] - self.data.xpos[b1]
-            self.model.eq_data[weld_id, 3:6] = r1.T @ delta_world
-            self.model.eq_data[weld_id, 6:10] = _quat_mul(_quat_inv(self.data.xquat[b1]), self.data.xquat[b2])
-            self.data.eq_active[weld_id] = 1
-            mujoco.mj_forward(self.model, self.data)
+        # 2. Close until both jaws really touch the handle, then weld. The
+        #    calibrated pose is only an initial guess: it is open-loop and does not
+        #    follow the per-seed drawer placement, so when it misses we re-approach
+        #    from the OBSERVED handle site rather than forcing the attachment.
+        if not self._grasp_drawer_handle(ctrl):
+            return self._fail("drawer handle grasp not established")
 
         # 4. Pull along -X by 11 cm (sliding the tray open more so plate is fully exposed)
         site_now = np.copy(self.site_pos("a_pinch_site"))
@@ -634,6 +650,30 @@ class PickMugPrimitive(BaseManipulationPrimitive):
     The pitch is held constant by the IK, so the mug stays upright in transit.
     """
 
+    def _grasp_mug_handle(self, ctrl: np.ndarray, handle: np.ndarray, pitch: float) -> bool:
+        """Close on the mug handle and weld ONLY once both jaws actually touch it.
+
+        Never attaches without contact. `handle` comes from the measured mug pose,
+        so the correction follows the real object rather than a fixed guess.
+        """
+        if self.close_until_contact("B", ctrl, "weld_mug", floor=GRIPPER_CLOSED, squeeze=0.02):
+            if self.attach_weld("weld_mug", require_both_jaws=True):
+                return True
+
+        for nudge in ((0.0, 0.0, 0.0), (0.0, 0.0, 0.006), (0.006, 0.0, 0.0)):
+            ctrl[11] = 0.5
+            self.move(ctrl, 0.3)
+            target = np.asarray(handle) + np.asarray(nudge)
+            q, _, ok = self.solve_ik_checked("B", target, 0.0, pitch=pitch)
+            if not ok:
+                continue
+            ctrl[6:11] = q
+            self.move(ctrl, 0.8)
+            if self.close_until_contact("B", ctrl, "weld_mug", floor=GRIPPER_CLOSED, squeeze=0.02):
+                if self.attach_weld("weld_mug", require_both_jaws=True):
+                    return True
+        return False
+
     def execute(self) -> bool:
         if not HAS_MUJOCO or self.model is None or self.data is None:
             return True
@@ -647,26 +687,17 @@ class PickMugPrimitive(BaseManipulationPrimitive):
 
         ctrl = np.copy(self.data.ctrl)
 
-        # 1. Move to the calibrated mug handle picking point with jaws positioned around handle
+        # 1. Move to the calibrated mug handle picking point with the jaws open.
         ctrl[6:11] = ARM_B_MUG_HANDLE_GRASP
         ctrl[11] = 0.5
         self.move(ctrl, 1.2)
 
-        # 2. Firmly clamp gripper on the handle
-        ctrl[11] = ARM_B_MUG_HANDLE_GRIPPER
-        self.move(ctrl, 0.4)
-
-        # 3. Attach weld constraint
-        weld_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_EQUALITY, "weld_mug")
-        if weld_id >= 0:
-            b1 = self.model.eq_obj1id[weld_id]
-            b2 = self.model.eq_obj2id[weld_id]
-            r1 = self.data.xmat[b1].reshape(3, 3)
-            delta_world = self.data.xpos[b2] - self.data.xpos[b1]
-            self.model.eq_data[weld_id, 3:6] = r1.T @ delta_world
-            self.model.eq_data[weld_id, 6:10] = _quat_mul(_quat_inv(self.data.xquat[b1]), self.data.xquat[b2])
-            self.data.eq_active[weld_id] = 1
-            mujoco.mj_forward(self.model, self.data)
+        # 2. Close until both jaws really touch the handle, then weld. The
+        #    calibrated pose is open-loop and ignores the per-seed mug placement and
+        #    yaw, so when it misses we re-approach from the OBSERVED handle point
+        #    (`handle`, derived from the measured mug pose) instead of forcing it.
+        if not self._grasp_mug_handle(ctrl, handle, pitch):
+            return self._fail("mug handle grasp not established")
 
         # 4. Lift to the transit altitude (pitch held -> mug stays upright).
         pitch = float(np.arcsin(np.clip(self.ik.gripper_pointing_axis("B")[2], -1.0, 1.0)))
