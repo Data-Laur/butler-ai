@@ -647,26 +647,27 @@ class PickMugPrimitive(BaseManipulationPrimitive):
 
         ctrl = np.copy(self.data.ctrl)
 
-        # 1. Move to the calibrated mug handle picking point with jaws positioned around handle
-        ctrl[6:11] = ARM_B_MUG_HANDLE_GRASP
-        ctrl[11] = 0.5
+        # 1. Approach from elevated pre-grasp directly above the physical handle
+        pre_grasp = handle + np.array([0.0, 0.0, 0.08])
+        q_pre, res_pre, ok_pre = self.solve_ik_checked("B", pre_grasp, wrist_roll=0.0, pitch=pitch)
+        if not ok_pre:
+            return self._fail(f"mug pre-grasp unreachable (residual {res_pre * 1000:.0f} mm)")
+        ctrl[6:11] = q_pre
+        ctrl[11] = GRIPPER_OPEN
         self.move(ctrl, 1.2)
 
-        # 2. Firmly clamp gripper on the handle
-        ctrl[11] = ARM_B_MUG_HANDLE_GRIPPER
-        self.move(ctrl, 0.4)
+        # 2. Cartesian descent to physical handle
+        worst = self.move_line("B", ctrl, pre_grasp, handle, 4, 0.8, wrist_roll=0.0, pitch=pitch)
+        if worst > 0.015:
+            return self._fail(f"mug handle unreachable (residual {worst * 1000:.0f} mm)")
 
-        # 3. Attach weld constraint
-        weld_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_EQUALITY, "weld_mug")
-        if weld_id >= 0:
-            b1 = self.model.eq_obj1id[weld_id]
-            b2 = self.model.eq_obj2id[weld_id]
-            r1 = self.data.xmat[b1].reshape(3, 3)
-            delta_world = self.data.xpos[b2] - self.data.xpos[b1]
-            self.model.eq_data[weld_id, 3:6] = r1.T @ delta_world
-            self.model.eq_data[weld_id, 6:10] = _quat_mul(_quat_inv(self.data.xquat[b1]), self.data.xquat[b2])
-            self.data.eq_active[weld_id] = 1
-            mujoco.mj_forward(self.model, self.data)
+        # 3. Close jaws until contact and attach weld ONLY when both jaws touch
+        closed = self.close_until_contact("B", ctrl, "weld_mug", floor=GRIPPER_CLOSED, squeeze=0.03)
+        if not (closed and self.attach_weld("weld_mug", require_both_jaws=True)):
+            ctrl[11] = GRIPPER_CLOSED
+            self.move(ctrl, 0.4)
+            if not self.attach_weld("weld_mug", require_both_jaws=True):
+                return self._fail("mug handle grasp not established (both jaws must touch)")
 
         # 4. Lift to the transit altitude (pitch held -> mug stays upright).
         pitch = float(np.arcsin(np.clip(self.ik.gripper_pointing_axis("B")[2], -1.0, 1.0)))
