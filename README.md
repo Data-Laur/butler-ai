@@ -69,15 +69,16 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
 
 ```mermaid
 flowchart TD
-    A["Command<br/>(text / audio / mic)"] --> B["stage1_voice<br/>Speechmatics + Claude"]
-    B -->|Task| C["stage2_perception<br/>MuJoCo sim-state<br/>(+ dormant ArUco vision)"]
-    C -->|SceneState| D["stage3_policy<br/>rule-based planner<br/>+ optional ACT policy"]
-    D -->|Action| E["stage4_bimanual<br/>dual-arm MuJoCo execution"]
-    E --> F["stage2_perception<br/>re-observe"] --> G["stage6_verify"]
-    G -->|ok| H["Done"]
+    A[Command: text, audio, or mic] --> B[stage1_voice: Speechmatics + Claude]
+    B -->|Task| C[stage2_perception: MuJoCo sim-state]
+    C -->|SceneState| D[stage3_policy: planner plus optional ACT]
+    D -->|Action| E[stage4_bimanual: dual-arm execution]
+    E --> F[stage2_perception: re-observe]
+    F --> G[stage6_verify]
+    G -->|ok| H[Done]
     G -->|replan| D
-    E -.-> I["stage5_openvino<br/>benchmark"]
-    D -.-> J["stage7_eval<br/>10-seed robustness"]
+    E -.-> I[stage5_openvino: benchmark]
+    D -.-> J[stage7_eval: 10-seed robustness]
 ```
 
 This is the real call graph of [`common/pipeline.py::run_once()`](common/pipeline.py) — not
