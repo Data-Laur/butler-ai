@@ -41,15 +41,23 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
 - Every claim below is tied to a file, commit, or number. Where something is a placeholder
   (demo video, a fresh 10-seed pipeline run) it's marked `[ADD]`, not filled in with a guess.
 
----
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## Scenes Of MuJoCo-simulated SO-101 arms:
 
 <img width="768" height="736" alt="image (1)" src="https://github.com/user-attachments/assets/a02f2e06-9f53-4b2e-b372-53df9c2483fd" />
 
----
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 <img width="970" height="575" alt="image (2)" src="https://github.com/user-attachments/assets/3d16a44f-b834-4bea-8180-bdb8ea4ac92b" />
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 
 ## Architecture
