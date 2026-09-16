@@ -19,7 +19,9 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
 > **"Open the top drawer, pick up the plate with arm A, place it on the table, pick up the
 > mug with arm B, pour water into the mug with arm A."**
 
----
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## TL;DR
 
