@@ -45,32 +45,6 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
   <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
 </div>
 
-## Scenes of the MuJoCo-simulated SO-101 arms
-
-<table>
-<tr>
-<td width="33%"><img src="https://github.com/user-attachments/assets/a02f2e06-9f53-4b2e-b372-53df9c2483fd" width="100%"/><p align="center"><sub>Full scene — dinner table, drawer, place setting</sub></p></td>
-<td width="33%"><img src="https://github.com/user-attachments/assets/3d16a44f-b834-4bea-8180-bdb8ea4ac92b" width="100%"/><p align="center"><sub>Drawer open, plate visible inside</sub></p></td>
-<td width="33%"><img src="https://github.com/user-attachments/assets/719e0b17-d8ab-4a04-af2c-0b3c67b427fa" width="100%"/><p align="center"><sub>Top-down view of both arms</sub></p></td>
-</tr>
-<tr>
-<td width="33%"><img width="768" height="766" alt="image" src="https://github.com/user-attachments/assets/b38bf0c0-a505-4e1f-b612-349d33023141" />
-<p align="center"><sub>Trying to Pick Bottle and Mug</sub></p></td>
-<td width="33%"><img width="454" height="541" alt="image" src="https://github.com/user-attachments/assets/c449bb3c-84c3-4714-b1fd-4c7e1b2c9de3" /><p align="center"><sub>Angled overhead, full place setting</sub></p></td>
-<td width="33%"><img width="768" height="749" alt="image" src="https://github.com/user-attachments/assets/3cfc72a2-d3fd-4299-8618-73ea005d6fad" />
-<p align="center"><sub>Water poured in Mug</sub></p></td>
-</tr>
-<tr>
-<td width="33%"><img src="https://github.com/user-attachments/assets/d8c987ec-0b24-4476-adbe-c7e3f45f4a0f" width="100%"/><p align="center"><sub>Wide isometric, arms lowered toward drawer/bottle</sub></p></td>
-<td width="33%"><img src="https://github.com/user-attachments/assets/38093214-a897-4c92-a342-a4483906035f" width="100%"/><p align="center"><sub>Drawer-tray detail, alternate crop</sub></p></td>
-<td width="33%"><img src="https://github.com/user-attachments/assets/e5585fee-52b4-465d-81e6-2b94b4b5d74b" width="100%"/><p align="center"><sub>Close overhead detail — drawer, mug, bottle</sub></p></td>
-</tr>
-</table>
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
 ## Architecture
 
 ```mermaid
@@ -92,6 +66,32 @@ an aspirational diagram. All inter-stage data is typed pydantic (`common/types.p
 signatures pinned in [`CONTRACTS.md`](CONTRACTS.md). Full stage-by-stage walkthrough,
 including exactly how language + vision + task state combine into the next action:
 → [deep dive](docs/TECHNICAL_DEEP_DIVE.md#multi-modal-reasoning).
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
+
+## Scenes of the MuJoCo-simulated SO-101 arms
+
+<table>
+<tr>
+<td width="33%"><img src="https://github.com/user-attachments/assets/a02f2e06-9f53-4b2e-b372-53df9c2483fd" width="100%"/><p align="center"><sub>Full scene — dinner table, drawer, place setting</sub></p></td>
+<td width="33%"><img src="https://github.com/user-attachments/assets/3d16a44f-b834-4bea-8180-bdb8ea4ac92b" width="100%"/><p align="center"><sub>Drawer open, plate visible inside</sub></p></td>
+<td width="33%"><img src="https://github.com/user-attachments/assets/719e0b17-d8ab-4a04-af2c-0b3c67b427fa" width="100%"/><p align="center"><sub>Top-down view of both arms</sub></p></td>
+</tr>
+<tr>
+<td width="33%"><img width="768" height="766" alt="image" src="https://github.com/user-attachments/assets/b38bf0c0-a505-4e1f-b612-349d33023141" />
+<p align="center"><sub>Trying to Pick Bottle and Mug</sub></p></td>
+<td width="33%"><img width="454" height="541" alt="image" src="https://github.com/user-attachments/assets/c449bb3c-84c3-4714-b1fd-4c7e1b2c9de3" /><p align="center"><sub>Angled overhead, full place setting</sub></p></td>
+<td width="33%"><img width="768" height="749" alt="image" src="https://github.com/user-attachments/assets/3cfc72a2-d3fd-4299-8618-73ea005d6fad" />
+<p align="center"><sub>Water poured in Mug</sub></p></td>
+</tr>
+<tr>
+<td width="33%"><img src="https://github.com/user-attachments/assets/d8c987ec-0b24-4476-adbe-c7e3f45f4a0f" width="100%"/><p align="center"><sub>Wide isometric, arms lowered toward drawer/bottle</sub></p></td>
+<td width="33%"><img src="https://github.com/user-attachments/assets/38093214-a897-4c92-a342-a4483906035f" width="100%"/><p align="center"><sub>Drawer-tray detail, alternate crop</sub></p></td>
+<td width="33%"><img src="https://github.com/user-attachments/assets/e5585fee-52b4-465d-81e6-2b94b4b5d74b" width="100%"/><p align="center"><sub>Close overhead detail — drawer, mug, bottle</sub></p></td>
+</tr>
+</table>
 
 <div align="center">
   <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
