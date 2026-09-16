@@ -51,10 +51,49 @@ def configured_checkpoint(config_path: Path = DEFAULT_CONFIG) -> str | None:
     return str(value) if value else None
 
 
-def select_motor_policy(checkpoint: str | Path | None, *, device: str = "cpu", load: bool = True) -> PolicySelection:
+def configured_openvino_ir(config_path: Path = DEFAULT_CONFIG) -> str | None:
+    """models.openvino_ir from the shared config."""
+    try:
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        return None
+    value = (config.get("models") or {}).get("openvino_ir")
+    return str(value) if value else None
+
+
+def select_motor_policy(
+    checkpoint: str | Path | None = None,
+    *,
+    backend: str = "auto",
+    device: str = "cpu",
+    load: bool = True,
+) -> PolicySelection:
     def fallback(reason: str, directory: Path | None = None) -> PolicySelection:
         return PolicySelection(FALLBACK, reason, directory)
 
+    # 1. OpenVINO backend requested or IR XML path passed
+    if backend in ("openvino", "ov") or (checkpoint and str(checkpoint).endswith(".xml")):
+        ir_path = checkpoint or configured_openvino_ir()
+        if not ir_path:
+            return fallback("no OpenVINO IR configured")
+        path = Path(ir_path)
+        if not path.is_absolute():
+            path = REPO_ROOT / path
+        xml_file = path if path.suffix == ".xml" else (path / "act_policy.xml")
+        if not xml_file.is_file():
+            return fallback(f"OpenVINO IR file {xml_file} does not exist", path)
+        if not load:
+            return PolicySelection(LEARNED, "OpenVINO IR exists (not loaded)", path)
+        try:
+            target_device = "GPU.0" if device.upper() in ("GPU", "GPU.0") else ("CPU" if device.lower() == "cpu" else device)
+            policy = OpenVinoMotorPolicy.load(xml_file, device=target_device)
+            return PolicySelection(LEARNED, f"loaded OpenVINO IR from {xml_file} on {target_device}", path, policy)
+        except Exception as exc:
+            return fallback(f"loading OpenVINO {xml_file} failed: {exc}", path)
+
+    # 2. PyTorch ACT backend
+    if checkpoint is None:
+        checkpoint = configured_checkpoint()
     if checkpoint is None:
         return fallback("no ACT checkpoint is configured")
     path = Path(checkpoint)
@@ -78,6 +117,83 @@ def select_motor_policy(checkpoint: str | Path | None, *, device: str = "cpu", l
     return PolicySelection(LEARNED, f"loaded ACT checkpoint from {directory}", directory, policy)
 
 
+class OpenVinoMotorPolicy:
+    """One OpenVINO IR model: observation -> 12 joint position targets (rad)."""
+
+    def __init__(self, compiled: Any, preprocessor: Any, postprocessor: Any, device: str) -> None:
+        self._compiled = compiled
+        self._pre = preprocessor
+        self._post = postprocessor
+        self._device = device
+        self._queue: list[list[float]] = []
+
+    @classmethod
+    def load(cls, ir_path: Path | str, device: str = "CPU") -> OpenVinoMotorPolicy:
+        import openvino as ov
+        import torch
+        from lerobot.policies.act.configuration_act import ACTConfig
+        from lerobot.policies.factory import make_pre_post_processors
+
+        path = Path(ir_path)
+        xml_file = path if path.suffix == ".xml" else (path / "act_policy.xml")
+        if not xml_file.is_file():
+            raise FileNotFoundError(f"OpenVINO IR model not found: {xml_file}")
+
+        core = ov.Core()
+        model = core.read_model(str(xml_file))
+        compiled = core.compile_model(model, device)
+
+        ckpt_dir = path.parent if path.suffix == ".xml" else path
+        if not (ckpt_dir / "policy_preprocessor.json").is_file():
+            ckpt_dir = REPO_ROOT / "assets" / "models" / "act_open_drawer"
+
+        cfg = ACTConfig.from_pretrained(str(ckpt_dir))
+        pre, post = make_pre_post_processors(
+            cfg,
+            pretrained_path=str(ckpt_dir),
+            preprocessor_overrides={"device_processor": {"device": "cpu"}},
+            postprocessor_overrides={"device_processor": {"device": "cpu"}},
+        )
+        return cls(compiled, pre, post, device)
+
+    def reset(self) -> None:
+        self._queue.clear()
+
+    def act(self, joint_positions: Sequence[float], overhead_rgb: Any, instruction: str) -> list[float]:
+        import numpy as np
+        import torch
+        from lerobot.policies.utils import prepare_observation_for_inference
+
+        if self._queue:
+            return self._queue.pop(0)
+
+        state = np.asarray(joint_positions, dtype=np.float32)
+        image = np.asarray(overhead_rgb)
+        if state.shape != (len(schema.MOTOR_NAMES),):
+            raise ValueError(f"expected {len(schema.MOTOR_NAMES)} joint positions")
+        if image.shape != schema.IMAGE_SHAPE or image.dtype != np.uint8:
+            raise ValueError(f"expected a uint8 {schema.IMAGE_SHAPE} RGB frame")
+
+        raw = {schema.STATE_KEY: state, schema.IMAGE_KEY: image}
+        batch = prepare_observation_for_inference(raw, torch.device("cpu"), task=instruction, robot_type=schema.ROBOT_TYPE)
+        normalized = self._pre(batch)
+
+        s_in = normalized[schema.STATE_KEY].contiguous().numpy()
+        img_in = normalized[schema.IMAGE_KEY].contiguous().numpy()
+
+        out_chunk = self._compiled([s_in, img_in])[self._compiled.output(0)]
+        chunk = torch.from_numpy(out_chunk)
+
+        for step in range(chunk.shape[1]):
+            action = self._post(chunk[:, step])
+            values = [float(v) for v in action.squeeze(0).tolist()]
+            if len(values) != len(schema.MOTOR_NAMES) or not all(math.isfinite(v) for v in values):
+                raise RuntimeError(f"policy returned an invalid action {values!r}")
+            self._queue.append(values)
+
+        return self._queue.pop(0)
+
+
 class ActMotorPolicy:
     """One ACT checkpoint for one skill: observation -> 12 joint position targets (rad)."""
 
@@ -93,7 +209,12 @@ class ActMotorPolicy:
         policy = ACTPolicy.from_pretrained(str(directory))
         policy.to(device)
         policy.eval()
-        preprocessor, postprocessor = make_pre_post_processors(policy.config, pretrained_path=str(directory))
+        preprocessor, postprocessor = make_pre_post_processors(
+            policy.config,
+            pretrained_path=str(directory),
+            preprocessor_overrides={"device_processor": {"device": device}},
+            postprocessor_overrides={"device_processor": {"device": device}},
+        )
         return cls(policy, preprocessor, postprocessor, torch.device(device))
 
     def reset(self) -> None:
