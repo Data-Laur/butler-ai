@@ -21,6 +21,20 @@ assets/models/
 *.pt
 *.onnx
 
+# Generated demonstration datasets & episodes
+data/lerobot_bimanual_v2/
+data/raw_skill_demos/
+data/raw_skill_demos_*/
+data/test_collection/
+*.parquet
+
+# Video recordings & generated animations
+*.mp4
+*.avi
+*.mov
+*.webm
+*.gif
+
 # OS / editor
 .DS_Store
 .idea/

@@ -13,16 +13,18 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 try:
+    import cv2
     import mujoco
     import numpy as np
     from PIL import Image
 except ImportError as err:
-    sys.exit(f"Missing dependency: {err}. Install with: pip install mujoco numpy Pillow")
+    sys.exit(f"Missing dependency: {err}. Install with: pip install mujoco numpy Pillow opencv-python")
 
 from common.types import Action, ActionType
 from stage4_bimanual.bimanual import reset_scene
 from stage4_bimanual.primitives import (
     OpenDrawerPrimitive,
+    PickBottlePrimitive,
     PickMugPrimitive,
     PickPlatePrimitive,
     PlacePlatePrimitive,
@@ -117,8 +119,18 @@ def record(seed: int = 0) -> None:
         ("Step 1/5: Open Drawer (Arm A)", OpenDrawerPrimitive),
         ("Step 2/5: Pick Plate from Drawer (Arm A)", PickPlatePrimitive),
         ("Step 3/5: Place Plate on Table (Arm A)", PlacePlatePrimitive),
-        ("Step 4/5: Pick & Hold Mug (Arm B)", PickMugPrimitive),
-        ("Step 5/5: Pour Water into Mug (Arm A)", PourWaterPrimitive),
+        ("Step 4/6: Pick & Hold Mug (Arm B)", PickMugPrimitive),
+        ("Step 5/6: Pick Bottle by its Body (Arm A)", PickBottlePrimitive),
+        ("Step 6/6: Pour Water into Mug (Arm A)", PourWaterPrimitive),
+    ]
+
+    skill_names = [
+        "open_drawer",
+        "pick_plate",
+        "place_plate",
+        "pick_mug",
+        "pick_bottle",
+        "pour_water",
     ]
 
     snapshot_names = [
@@ -126,7 +138,8 @@ def record(seed: int = 0) -> None:
         "step2_plate_lift.png",
         "step3_plate_table.png",
         "step4_mug_hold.png",
-        "step5_pour_water.png",
+        "step5_bottle_lift.png",
+        "step6_pour_water.png",
     ]
 
     for i, (desc, PrimitiveClass) in enumerate(steps):
@@ -147,6 +160,21 @@ def record(seed: int = 0) -> None:
             snapshot.save(_OUT_DIR / snapshot_names[i])
             print(f"  -> Saved {snapshot_names[i]}")
 
+        # Save individual skill animated GIF for quick inspection
+        step_frames = executor.frames[frame_before:frame_after]
+        if len(step_frames) > 1:
+            step_gif = _OUT_DIR / f"{skill_names[i]}.gif"
+            gif_frames = step_frames[::2]
+            gif_frames[0].save(
+                step_gif,
+                save_all=True,
+                append_images=gif_frames[1:],
+                duration=66,
+                loop=0,
+                optimize=True,
+            )
+            print(f"  -> Saved {skill_names[i]}.gif")
+
         if not success or not sim.contact_audit.ok:
             print(f"  -> Stopping: unsafe/failed motion: {sim.contact_audit.summary()}")
             break
@@ -165,15 +193,17 @@ def record(seed: int = 0) -> None:
     for name, pos in positions.items():
         print(f"  {name}: ({pos[0]:.3f}, {pos[1]:.3f}, {pos[2]:.3f})")
 
-    # 5. Save animated GIF
-    gif_path = _OUT_DIR / "bimanual_simulation_full.gif"
+    # 5. Save full simulation animated GIF
     if len(executor.frames) > 1:
-        executor.frames[0].save(
+        gif_path = _OUT_DIR / "bimanual_simulation_full.gif"
+        gif_frames = executor.frames[::2]
+        gif_frames[0].save(
             gif_path,
             save_all=True,
-            append_images=executor.frames[1:],
-            duration=60,
+            append_images=gif_frames[1:],
+            duration=66,
             loop=0,
+            optimize=True,
         )
         print(f"\nGIF saved: {gif_path}")
     else:
