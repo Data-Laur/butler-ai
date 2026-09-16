@@ -384,9 +384,33 @@ class BaseManipulationPrimitive(ABC):
     def execute(self) -> bool:
         """Execute the manipulation primitive and return success status."""
 
-
 class OpenDrawerPrimitive(BaseManipulationPrimitive):
     """Arm A moves to the calibrated handle picking point, grips the D-handle, and pulls the drawer open."""
+
+    def _grasp_drawer_handle(self, ctrl: np.ndarray) -> bool:
+        """Close on the D-handle and weld ONLY once both jaws actually touch it.
+
+        Never attaches without contact: a weld is an approximation of a grasp, not
+        a teleport. If the calibrated pose missed the handle, re-approach using the
+        observed drawer_handle_site so the correction follows the real object.
+        """
+        if self.close_until_contact("A", ctrl, "weld_drawer", floor=GRIPPER_CLOSED, squeeze=0.03):
+            if self.attach_weld("weld_drawer", require_both_jaws=True):
+                return True
+
+        for nudge in ((0.0, 0.0, 0.0), (0.008, 0.0, 0.0), (0.0, 0.0, -0.006)):
+            ctrl[5] = ARM_A_DRAWER_HANDLE_GRIPPER
+            self.move(ctrl, 0.3)
+            target = np.copy(self.site_pos("drawer_handle_site")) + np.asarray(nudge)
+            q, _, ok = self.solve_ik_checked("A", target, ARM_A_DRAWER_HANDLE_GRASP[4])
+            if not ok:
+                continue
+            ctrl[0:5] = q
+            self.move(ctrl, 0.8)
+            if self.close_until_contact("A", ctrl, "weld_drawer", floor=GRIPPER_CLOSED, squeeze=0.03):
+                if self.attach_weld("weld_drawer", require_both_jaws=True):
+                    return True
+        return False
 
     def execute(self) -> bool:
         if not HAS_MUJOCO or self.model is None or self.data is None:
@@ -397,26 +421,14 @@ class OpenDrawerPrimitive(BaseManipulationPrimitive):
         ctrl[6:11] = ARM_B_STANDBY
         ctrl[11] = GRIPPER_OPEN
 
-        # 1. Approach handle picking point with jaws open around the handle bar
+        # 1. Approach the calibrated handle picking point with the jaws open.
         ctrl[0:5] = ARM_A_DRAWER_HANDLE_GRASP
         ctrl[5] = ARM_A_DRAWER_HANDLE_GRIPPER
         self.move(ctrl, 1.2)
 
-        # 2. Firmly clamp gripper around the handle bar
-        ctrl[5] = GRIPPER_CLOSED
-        self.move(ctrl, 0.4)
-
-        # 3. Attach weld constraint dynamically to lock gripper and sliding tray
-        weld_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_EQUALITY, "weld_drawer")
-        if weld_id >= 0:
-            b1 = self.model.eq_obj1id[weld_id]
-            b2 = self.model.eq_obj2id[weld_id]
-            r1 = self.data.xmat[b1].reshape(3, 3)
-            delta_world = self.data.xpos[b2] - self.data.xpos[b1]
-            self.model.eq_data[weld_id, 3:6] = r1.T @ delta_world
-            self.model.eq_data[weld_id, 6:10] = _quat_mul(_quat_inv(self.data.xquat[b1]), self.data.xquat[b2])
-            self.data.eq_active[weld_id] = 1
-            mujoco.mj_forward(self.model, self.data)
+        # 2. Close until both jaws really touch the handle, then weld.
+        if not self._grasp_drawer_handle(ctrl):
+            return self._fail("drawer handle grasp not established")
 
         # 4. Pull along -X by 11 cm (sliding the tray open more so plate is fully exposed)
         site_now = np.copy(self.site_pos("a_pinch_site"))
