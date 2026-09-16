@@ -23,10 +23,17 @@ def official_task() -> Task:
 
 
 def valid_scene() -> SceneState:
+    """A scene that genuinely satisfies the task, destinations included.
+
+    plate and mug sit on their configured table destinations
+    (stage6_verify.verify.TABLE_DESTINATIONS, which mirrors
+    stage4_bimanual.constants.PLATE_TABLE_XY), so the placement check passes for
+    the right reason rather than because it is not exercised.
+    """
     return SceneState(
         objects={
-            "plate": (0.20, 0.10, 0.72),
-            "mug": (0.30, 0.10, 0.72),
+            "plate": (0.06, 0.00, 0.72),
+            "mug": (0.12, 0.20, 0.72),
             "water_bottle": (0.12, -0.04, 0.70),
         },
         drawers={"top_drawer": "open"},
