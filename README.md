@@ -58,6 +58,11 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
 <td width="33%"><img src="https://github.com/user-attachments/assets/3fd2a7a2-2901-4e02-b9aa-92be2fce8384" width="100%"/><p align="center"><sub>Angled overhead, full place setting</sub></p></td>
 <td width="33%"><img src="https://github.com/user-attachments/assets/15c55911-6a3f-43b7-97ee-890a6b84ad93" width="100%"/><p align="center"><sub>Isometric view, both arms parked</sub></p></td>
 </tr>
+<tr>
+<td width="33%"><img src="https://github.com/user-attachments/assets/d8c987ec-0b24-4476-adbe-c7e3f45f4a0f" width="100%"/><p align="center"><sub>Wide isometric, arms lowered toward drawer/bottle</sub></p></td>
+<td width="33%"><img src="https://github.com/user-attachments/assets/38093214-a897-4c92-a342-a4483906035f" width="100%"/><p align="center"><sub>Drawer-tray detail, alternate crop</sub></p></td>
+<td width="33%"><img src="https://github.com/user-attachments/assets/e5585fee-52b4-465d-81e6-2b94b4b5d74b" width="100%"/><p align="center"><sub>Close overhead detail — drawer, mug, bottle</sub></p></td>
+</tr>
 </table>
 
 ## Architecture
