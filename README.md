@@ -59,6 +59,41 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
   <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
 </div>
 
+<img width="512" height="695" alt="image" src="https://github.com/user-attachments/assets/719e0b17-d8ab-4a04-af2c-0b3c67b427fa" />
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
+
+<img width="957" height="801" alt="image" src="https://github.com/user-attachments/assets/d8c987ec-0b24-4476-adbe-c7e3f45f4a0f" />
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
+
+<img width="887" height="731" alt="image" src="https://github.com/user-attachments/assets/d0b5f1ff-9beb-4de3-a281-ae77b6593711" />
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
+
+<img width="618" height="715" alt="image" src="https://github.com/user-attachments/assets/35e5c2a9-bf97-4f4c-88c7-46cbad5b34da" />
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
+
+<img width="952" height="702" alt="image" src="https://github.com/user-attachments/assets/80d61052-5a52-4d8f-9708-4d41df99b692" />
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
+
+<img width="887" height="731" alt="image" src="https://github.com/user-attachments/assets/c031634d-b6aa-465d-bbed-3720e666e8a1" />
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
 
 ## Architecture
 
