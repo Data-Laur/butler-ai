@@ -161,7 +161,7 @@
     </body>
 
     <!-- 3D Realistic Clean Water Bottle (Arm A pouring into Arm B's mug) -->
-    <body name="water_bottle" pos="0.135 -0.06 0.70">
+    <body name="water_bottle" pos="0.17 -0.01 0.70">
       <freejoint/>
       <!-- Visual 3D Mesh -->
       <geom type="mesh" mesh="bottle_mesh" material="bottle_blue_mat" contype="0" conaffinity="0" group="2"/>
