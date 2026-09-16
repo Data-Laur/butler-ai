@@ -45,103 +45,20 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
   <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
 </div>
 
-## Scenes Of MuJoCo-simulated SO-101 arms:
+## Scenes of the MuJoCo-simulated SO-101 arms
 
-<img width="768" height="736" alt="image (1)" src="https://github.com/user-attachments/assets/a02f2e06-9f53-4b2e-b372-53df9c2483fd" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="970" height="575" alt="image (2)" src="https://github.com/user-attachments/assets/3d16a44f-b834-4bea-8180-bdb8ea4ac92b" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="512" height="695" alt="image" src="https://github.com/user-attachments/assets/719e0b17-d8ab-4a04-af2c-0b3c67b427fa" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="957" height="801" alt="image" src="https://github.com/user-attachments/assets/d8c987ec-0b24-4476-adbe-c7e3f45f4a0f" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="887" height="731" alt="image" src="https://github.com/user-attachments/assets/d0b5f1ff-9beb-4de3-a281-ae77b6593711" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="618" height="715" alt="image" src="https://github.com/user-attachments/assets/35e5c2a9-bf97-4f4c-88c7-46cbad5b34da" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="952" height="702" alt="image" src="https://github.com/user-attachments/assets/80d61052-5a52-4d8f-9708-4d41df99b692" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="887" height="731" alt="image" src="https://github.com/user-attachments/assets/c031634d-b6aa-465d-bbed-3720e666e8a1" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="534" height="549" alt="image" src="https://github.com/user-attachments/assets/c980867f-093d-4525-89bc-2a38d4f73f09" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="874" height="479" alt="image" src="https://github.com/user-attachments/assets/3fd2a7a2-2901-4e02-b9aa-92be2fce8384" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="709" height="580" alt="image" src="https://github.com/user-attachments/assets/38093214-a897-4c92-a342-a4483906035f" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="595" height="598" alt="image" src="https://github.com/user-attachments/assets/e5585fee-52b4-465d-81e6-2b94b4b5d74b" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="768" height="728" alt="image" src="https://github.com/user-attachments/assets/43e0d4fe-4897-48d3-a1f3-6251367aa445" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="768" height="766" alt="image" src="https://github.com/user-attachments/assets/3693bf34-00f8-4169-bbdf-6bab36fdc6c8" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="768" height="749" alt="image" src="https://github.com/user-attachments/assets/2712f533-352d-402d-a0e7-585200700110" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
-<img width="689" height="768" alt="image" src="https://github.com/user-attachments/assets/15c55911-6a3f-43b7-97ee-890a6b84ad93" />
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
+<table>
+<tr>
+<td width="33%"><img src="https://github.com/user-attachments/assets/a02f2e06-9f53-4b2e-b372-53df9c2483fd" width="100%"/><p align="center"><sub>Full scene — dinner table, drawer, place setting</sub></p></td>
+<td width="33%"><img src="https://github.com/user-attachments/assets/3d16a44f-b834-4bea-8180-bdb8ea4ac92b" width="100%"/><p align="center"><sub>Drawer open, plate visible inside</sub></p></td>
+<td width="33%"><img src="https://github.com/user-attachments/assets/719e0b17-d8ab-4a04-af2c-0b3c67b427fa" width="100%"/><p align="center"><sub>Top-down view of both arms</sub></p></td>
+</tr>
+<tr>
+<td width="33%"><img src="https://github.com/user-attachments/assets/c980867f-093d-4525-89bc-2a38d4f73f09" width="100%"/><p align="center"><sub>Drawer-tray detail, close-up</sub></p></td>
+<td width="33%"><img src="https://github.com/user-attachments/assets/3fd2a7a2-2901-4e02-b9aa-92be2fce8384" width="100%"/><p align="center"><sub>Angled overhead, full place setting</sub></p></td>
+<td width="33%"><img src="https://github.com/user-attachments/assets/15c55911-6a3f-43b7-97ee-890a6b84ad93" width="100%"/><p align="center"><sub>Isometric view, both arms parked</sub></p></td>
+</tr>
+</table>
 
 ## Architecture
 
