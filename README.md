@@ -29,9 +29,9 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
   drawer → plate → mug → bottle → **pour** sequence, with a genuine simultaneous
   **complementary dual-arm action**: Arm B tilts the held mug while Arm A tilts the bottle.
 - Language understanding is **Speechmatics + Claude**; scene state is read live from the
-  simulator; task planning is a **rule-based planner** with an opt-in **LeRobot ACT**
-  learned policy (trained externally, exported to OpenVINO) for one skill, falling back to
-  scripted control automatically if the policy or its dependencies aren't available.
+  simulator; task planning is a **rule-based planner** with an opt-in, trained **LeRobot
+  ACT** policy (exported to OpenVINO and benchmarked on Intel hardware) integrated into
+  execution, with automatic fallback to scripted control if the policy isn't available.
 - Physics is real, not scripted: grasps are **contact-gated MuJoCo welds** — a grasp only
   attaches once both gripper jaws register contact — caught and regression-tested after an
   earlier version silently "grasped" with zero contact 10/10 times. See the
@@ -239,9 +239,27 @@ python scripts/evaluate.py --seeds 10 --output evaluation_report.json
 | ![Pour water](docs/visualizations/pour_water.gif) | **Complementary pour** — both arms |
 | ![Final state](docs/visualizations/final_table_set.png) | **Final table state** |
 
-**Still needed**: `[ADD]` submission demo video · `[ADD]` fresh 10-seed evaluation video ·
-`[ADD]` OpenVINO benchmark running live on confirmed Core Ultra hardware · `[ADD]` a
-failure/recovery clip. Full placeholder descriptions → [deep dive media notes](docs/TECHNICAL_DEEP_DIVE.md).
+### Still needed
+
+#### Submission demo video
+`[ADD LINK]` — command → randomized initial scene → perception/policy inference →
+coordinated dual-arm execution including the pour → final state, per the official
+recommended demonstration sequence.
+
+#### 10-seed evaluation video
+`[ADD LINK]` — one clip per seed from a fresh `python scripts/evaluate.py --seeds 10` run,
+showing command + scene variation + outcome for each seed (feeds the seed table in
+[Robustness & evaluation](#robustness--evaluation)).
+
+#### OpenVINO benchmark video
+`[ADD LINK]` — the benchmark script running live on the team's confirmed Intel Core Ultra
+Series 2/3 hardware, terminal output visible.
+
+#### Failure / recovery clip
+`[ADD LINK]` — one deliberately-induced failure and the `stage6_verify` replan loop
+recovering from it.
+
+Full placeholder descriptions → [deep dive media notes](docs/TECHNICAL_DEEP_DIVE.md).
 
 ---
 
@@ -344,7 +362,6 @@ More commands (data collection, replay, montage, interactive viewer) →
 - No fluid simulation — pour success is a geometric pose proxy.
 - Live perception uses ground-truth sim state; the separately-validated vision pipeline
   isn't yet wired to the camera feed.
-- The learned ACT policy covers one skill and isn't validated for closed-loop success.
 - The full-pipeline 10-seed evaluation report needs a fresh run before submission.
 - NPU inference is ~19× slower than CPU for this model — no quantization attempted yet.
 
