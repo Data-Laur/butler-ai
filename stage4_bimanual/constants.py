@@ -67,6 +67,14 @@ ALTITUDE_APPROACH_HIGH: Final[float] = 0.910 # High waypoint for approaching tal
 ARM_A_STANDBY: Final[list[float]] = [-0.10, -0.80, 1.40, -0.60, 0.0]
 ARM_B_STANDBY: Final[list[float]] = [ 0.10, -0.80, 1.40, -0.60, 0.0]
 
+# Arm A drawer handle picking point configuration (exact alignment with D-handle)
+ARM_A_DRAWER_HANDLE_GRASP: Final[list[float]] = [-0.115, -0.244, 0.879, 0.381, 0.0208]
+ARM_A_DRAWER_HANDLE_GRIPPER: Final[float] = 0.152
+
+# Arm B mug handle picking point configuration (exact alignment with handle)
+ARM_B_MUG_HANDLE_GRASP: Final[list[float]] = [-0.0384, -0.541, 1.12, 0.0, 0.0]
+ARM_B_MUG_HANDLE_GRIPPER: Final[float] = 0.0
+
 DRAWER_SLIDE_MAX_METERS: Final[float] = 0.15
 DEFAULT_SUBSTEPS_PER_TRAJECTORY: Final[int] = 60
 

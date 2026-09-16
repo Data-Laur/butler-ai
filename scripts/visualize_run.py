@@ -38,13 +38,13 @@ class ViewerSyncTrajectoryExecutor(TrajectoryExecutor):
     after each physics step, so the user sees every movement in real time.
     """
 
-    def __init__(self, model, data, viewer, contact_audit, step_delay: float = 0.012):
+    def __init__(self, model, data, viewer, contact_audit, step_delay: float = 0.0):
         super().__init__(model, data, contact_audit=contact_audit)
         self._viewer = viewer
         self._step_delay = step_delay
 
     def interpolate(self, target_ctrl, steps: int = 60) -> None:
-        """Smooth cosine interpolation with viewer sync after each substep."""
+        """Smooth cosine interpolation with responsive viewer sync."""
         if self.model is None or self.data is None:
             return
 
@@ -60,20 +60,24 @@ class ViewerSyncTrajectoryExecutor(TrajectoryExecutor):
             mujoco.mj_step(self.model, self.data)
             if self.contact_audit is not None:
                 self.contact_audit.sample(self.model, self.data)
-            self._viewer.sync()
-            time.sleep(self._step_delay)
+            if (s + 1) % 4 == 0 or s == steps - 1:
+                self._viewer.sync()
+                if self._step_delay > 0:
+                    time.sleep(self._step_delay)
 
         # Hold target and settle physical joints so robot arrives before next step
         self.data.ctrl[:] = target_ctrl_arr
         settle_steps = min(25, max(10, steps // 3))
-        for _ in range(settle_steps):
+        for s in range(settle_steps):
             if not self._viewer.is_running():
                 return
             mujoco.mj_step(self.model, self.data)
             if self.contact_audit is not None:
                 self.contact_audit.sample(self.model, self.data)
-            self._viewer.sync()
-            time.sleep(self._step_delay)
+            if (s + 1) % 4 == 0 or s == settle_steps - 1:
+                self._viewer.sync()
+                if self._step_delay > 0:
+                    time.sleep(self._step_delay)
 
 
 def run_interactive(seed: int = 0) -> None:
@@ -108,8 +112,8 @@ def run_interactive(seed: int = 0) -> None:
         if not viewer.is_running():
             return
 
-        # Create the viewer-syncing trajectory executor
-        executor = ViewerSyncTrajectoryExecutor(m, d, viewer, sim.contact_audit, step_delay=0.012)
+        # Create the viewer-syncing trajectory executor (fast real-time playback)
+        executor = ViewerSyncTrajectoryExecutor(m, d, viewer, sim.contact_audit, step_delay=0.0)
 
         # Execute each REAL primitive
         steps = [
