@@ -54,7 +54,8 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
 <td width="33%"><img src="https://github.com/user-attachments/assets/719e0b17-d8ab-4a04-af2c-0b3c67b427fa" width="100%"/><p align="center"><sub>Top-down view of both arms</sub></p></td>
 </tr>
 <tr>
-<td width="33%"><img src="https://github.com/user-attachments/assets/c980867f-093d-4525-89bc-2a38d4f73f09" width="100%"/><p align="center"><sub>Drawer-tray detail, close-up</sub></p></td>
+<td width="33%"><img width="768" height="766" alt="image" src="https://github.com/user-attachments/assets/b38bf0c0-a505-4e1f-b612-349d33023141" />
+<p align="center"><sub>Trying to Pick Bottle and Mug</sub></p></td>
 <td width="33%"><img width="454" height="541" alt="image" src="https://github.com/user-attachments/assets/c449bb3c-84c3-4714-b1fd-4c7e1b2c9de3" /><p align="center"><sub>Angled overhead, full place setting</sub></p></td>
 <td width="33%"><img width="768" height="749" alt="image" src="https://github.com/user-attachments/assets/3cfc72a2-d3fd-4299-8618-73ea005d6fad" />
 <p align="center"><sub>Water poured in Mug</sub></p></td>
