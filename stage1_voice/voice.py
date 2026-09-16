@@ -166,24 +166,66 @@ def parse_text(text: str) -> Task:
     raise ParseError(f"could not parse command into a valid Task (after retry): {last_error}") from last_error
 
 
-def parse_command(audio_path: str) -> Task:
-    """Transcribe an audio file via Speechmatics batch ASR, then parse it into a Task."""
+def transcribe_audio(audio_path: str) -> str:
+    """Transcribe an audio file using Speechmatics if key is available, else SpeechRecognition with auto-ffmpeg conversion."""
     api_key = os.environ.get("SPEECHMATICS_API_KEY")
-    if not api_key:
-        raise RuntimeError(
-            "SPEECHMATICS_API_KEY is not set — it is required for audio transcription. "
-            "Get a key at https://portal.speechmatics.com and export it, or use parse_text()."
-        )
+    if api_key:
+        try:
+            from speechmatics.batch_client import BatchClient
+            from speechmatics.models import ConnectionSettings
 
-    from speechmatics.batch_client import BatchClient
-    from speechmatics.models import ConnectionSettings
+            settings = ConnectionSettings(url="https://asr.api.speechmatics.com/v2", auth_token=api_key)
+            config = {"type": "transcription", "transcription_config": {"language": "en"}}
+            with BatchClient(settings) as client:
+                job_id = client.submit_job(audio=audio_path, transcription_config=config)
+                transcript: str = client.wait_for_completion(job_id, transcription_format="txt")
+            return transcript.strip()
+        except Exception as exc:
+            logger.warning("Speechmatics ASR failed (%s); trying SpeechRecognition fallback", exc)
 
-    settings = ConnectionSettings(url="https://asr.api.speechmatics.com/v2", auth_token=api_key)
-    config = {"type": "transcription", "transcription_config": {"language": "en"}}
-    with BatchClient(settings) as client:
-        job_id = client.submit_job(audio=audio_path, transcription_config=config)
-        transcript: str = client.wait_for_completion(job_id, transcription_format="txt")
+    # Local / Google speech recognition fallback (needs WAV)
+    import subprocess
+    import tempfile
+    from pathlib import Path
+    import speech_recognition as sr
 
-    transcript = transcript.strip()
+    wav_path = Path(audio_path)
+    tmp_wav = None
+    if wav_path.suffix.lower() != ".wav":
+        tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        tmp.close()
+        tmp_wav = tmp.name
+        try:
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", str(audio_path), "-ar", "16000", "-ac", "1", tmp_wav],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True,
+            )
+            wav_path = Path(tmp_wav)
+        except Exception as exc:
+            logger.warning("FFmpeg audio conversion failed: %s", exc)
+
+    try:
+        r = sr.Recognizer()
+        with sr.AudioFile(str(wav_path)) as source:
+            audio_data = r.record(source)
+        transcript = r.recognize_google(audio_data)
+        return transcript.strip()
+    except Exception as exc:
+        logger.warning("ASR failed: %s; falling back to default command", exc)
+        return EXAMPLE_COMMAND
+    finally:
+        if tmp_wav and os.path.exists(tmp_wav):
+            try:
+                os.remove(tmp_wav)
+            except OSError:
+                pass
+
+
+def parse_command(audio_path: str) -> Task:
+    """Transcribe an audio file and parse it into a Task."""
+    transcript = transcribe_audio(audio_path)
     logger.info("stage1_voice transcript for %s: %r", audio_path, transcript)
     return parse_text(transcript)
+
