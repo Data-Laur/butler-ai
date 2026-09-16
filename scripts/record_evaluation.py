@@ -153,11 +153,18 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--seeds", type=int, default=10)
     ap.add_argument("--out", type=Path, default=Path("outputs/eval10_video"))
+    ap.add_argument(
+        "--capture-every", type=int, default=RecordingTrajectoryExecutor.capture_every,
+        help="render one frame per N physics steps. Affects only how densely frames are "
+             "sampled for the video; _on_step never touches simulation state, so physics "
+             "is unchanged at any value.",
+    )
     ap.add_argument("--montage", action="store_true", help="also write a combined montage")
     args = ap.parse_args()
 
     out = (_ROOT / args.out) if not args.out.is_absolute() else args.out
     (out / "logs").mkdir(parents=True, exist_ok=True)
+    RecordingTrajectoryExecutor.capture_every = max(1, args.capture_every)
 
     results, montage_frames = [], []
     for seed in range(args.seeds):
@@ -179,6 +186,7 @@ def main() -> int:
         "successes": succ, "total": len(results),
         "percent": 100.0 * succ / len(results) if results else 0.0,
         "command": EXAMPLE_COMMAND,
+        "capture_every_physics_steps": RecordingTrajectoryExecutor.capture_every,
         "results": results,
         "environment": {
             "python": sys.version, "platform": platform.platform(),
