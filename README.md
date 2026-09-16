@@ -45,32 +45,6 @@ Intel Physical AI Online Challenge — Bimanual VLA Manipulation with Multi-Moda
   <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
 </div>
 
-## Architecture
-
-```mermaid
-flowchart TD
-    A[Command: text, audio, or mic] --> B[stage1_voice: Speechmatics + Claude]
-    B -->|Task| C[stage2_perception: MuJoCo sim-state]
-    C -->|SceneState| D[stage3_policy: planner plus optional ACT]
-    D -->|Action| E[stage4_bimanual: dual-arm execution]
-    E --> F[stage2_perception: re-observe]
-    F --> G[stage6_verify]
-    G -->|ok| H[Done]
-    G -->|replan| D
-    E -.-> I[stage5_openvino: benchmark]
-    D -.-> J[stage7_eval: 10-seed robustness]
-```
-
-This is the real call graph of [`common/pipeline.py::run_once()`](common/pipeline.py) — not
-an aspirational diagram. All inter-stage data is typed pydantic (`common/types.py`),
-signatures pinned in [`CONTRACTS.md`](CONTRACTS.md). Full stage-by-stage walkthrough,
-including exactly how language + vision + task state combine into the next action:
-→ [deep dive](docs/TECHNICAL_DEEP_DIVE.md#multi-modal-reasoning).
-
-<div align="center">
-  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
-</div>
-
 ## Scenes of the MuJoCo-simulated SO-101 arms
 
 <table>
@@ -92,6 +66,32 @@ including exactly how language + vision + task state combine into the next actio
 <td width="33%"><img src="https://github.com/user-attachments/assets/e5585fee-52b4-465d-81e6-2b94b4b5d74b" width="100%"/><p align="center"><sub>Close overhead detail — drawer, mug, bottle</sub></p></td>
 </tr>
 </table>
+
+<div align="center">
+  <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
+</div>
+
+## Architecture
+
+```mermaid
+flowchart TD
+    A[Command: text, audio, or mic] --> B[stage1_voice: Speechmatics + Claude]
+    B -->|Task| C[stage2_perception: MuJoCo sim-state]
+    C -->|SceneState| D[stage3_policy: planner plus optional ACT]
+    D -->|Action| E[stage4_bimanual: dual-arm execution]
+    E --> F[stage2_perception: re-observe]
+    F --> G[stage6_verify]
+    G -->|ok| H[Done]
+    G -->|replan| D
+    E -.-> I[stage5_openvino: benchmark]
+    D -.-> J[stage7_eval: 10-seed robustness]
+```
+
+This is the real call graph of [`common/pipeline.py::run_once()`](common/pipeline.py) — not
+an aspirational diagram. All inter-stage data is typed pydantic (`common/types.py`),
+signatures pinned in [`CONTRACTS.md`](CONTRACTS.md). Full stage-by-stage walkthrough,
+including exactly how language + vision + task state combine into the next action:
+→ [deep dive](docs/TECHNICAL_DEEP_DIVE.md#multi-modal-reasoning).
 
 <div align="center">
   <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
@@ -174,6 +174,7 @@ table below is a placeholder to fill in with a fresh run before the submission v
 ```bash
 python scripts/evaluate.py --seeds 10 --output evaluation_report.json
 ```
+
 <div align="center">
   <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
 </div>
@@ -211,6 +212,8 @@ No self-scoring — only where the evidence for each official criterion lives.
 | OpenVINO & Intel Core Ultra Optimization (20) | [Results at a glance](#results-at-a-glance), [full benchmarks](docs/TECHNICAL_DEEP_DIVE.md#intel--openvino-benchmark-results-in-full) |
 | Technical Quality & Reproducibility (10) | [Testing](docs/TECHNICAL_DEEP_DIVE.md#testing), [Installation](#installation--running-it), [`CONTRACTS.md`](CONTRACTS.md) |
 | Innovation & Technical Demonstration (5) | Hybrid learned/scripted policy with fallback, closed-loop mouth-tracking pour, source-inspecting regression test |
+
+[For More Details](docs/TECHNICAL_DEEP_DIVE.md).
 
 <div align="center">
   <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
@@ -318,6 +321,8 @@ in the executor, real SO-101 hardware deployment. Details → [deep dive](docs/T
 | Verify & Recover | Abdullah | Postcondition checks, replan signal |
 | Robustness & Randomized Eval | Abdullah | Domain randomization, seed evaluation |
 | Integration & Submission | Alex | End-to-end wiring, README, packaging |
+
+[For More Details](docs/TECHNICAL_DEEP_DIVE.md).
 
 <div align="center">
   <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="100%" height="100px">
