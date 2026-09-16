@@ -92,7 +92,11 @@ def get_camera_frame(sim: Any) -> Any | None:
     return None
 
 
-def execute(actions: list[Action], sim: Any | None = None) -> ExecutionResult:
+def execute(
+    actions: list[Action],
+    sim: Any | None = None,
+    executor_factory: Any | None = None,
+) -> ExecutionResult:
     """Execute planned Actions on the dual SO-101 MuJoCo simulation.
 
     Dispatches high-level actions to specialized manipulation primitives
@@ -123,7 +127,8 @@ def execute(actions: list[Action], sim: Any | None = None) -> ExecutionResult:
             error="MuJoCo is unavailable; no manipulation was executed.",
         )
 
-    executor = TrajectoryExecutor(sim.model, sim.data, contact_audit=sim.contact_audit)
+    factory = executor_factory or TrajectoryExecutor
+    executor = factory(sim.model, sim.data, contact_audit=sim.contact_audit)
     action_results: dict[int, bool] = {}
 
     for action in actions:

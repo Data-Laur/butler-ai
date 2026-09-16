@@ -20,6 +20,13 @@ class TrajectoryExecutor:
         self.data = data
         self.contact_audit = contact_audit
 
+    def _on_step(self) -> None:
+        """Observer hook called after every mj_step; no-op by default.
+
+        Subclasses may read state here (e.g. to render a frame) but must never
+        modify model, data or ctrl, so the simulation stays bit-identical.
+        """
+
     def interpolate(
         self,
         target_ctrl: np.ndarray | list[float],
@@ -44,6 +51,7 @@ class TrajectoryExecutor:
             mujoco.mj_step(self.model, self.data)
             if self.contact_audit is not None:
                 self.contact_audit.sample(self.model, self.data)
+            self._on_step()
 
         # Hold final target for settling
         self.data.ctrl[:] = target_ctrl_arr
@@ -52,3 +60,4 @@ class TrajectoryExecutor:
             mujoco.mj_step(self.model, self.data)
             if self.contact_audit is not None:
                 self.contact_audit.sample(self.model, self.data)
+            self._on_step()
