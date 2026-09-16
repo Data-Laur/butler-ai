@@ -1,4 +1,4 @@
-# ai-infra-summit-hack
+# Butler AI
 
 Two simulated SO-101 arms set a dinner table from a natural-language voice
 command — Intel Physical AI Online Challenge (lablab.ai AI Infra Summit
