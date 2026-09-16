@@ -68,7 +68,7 @@ ARM_A_STANDBY: Final[list[float]] = [-0.10, -0.80, 1.40, -0.60, 0.0]
 ARM_B_STANDBY: Final[list[float]] = [ 0.10, -0.80, 1.40, -0.60, 0.0]
 
 # Arm A drawer handle picking point configuration (exact alignment with D-handle)
-ARM_A_DRAWER_HANDLE_GRASP: Final[list[float]] = [-0.115, -0.244, 0.879, 0.381, 0.0208]
+ARM_A_DRAWER_HANDLE_GRASP: Final[list[float]] = [-0.115, -0.244, 0.879, 0.381, -0.286]
 ARM_A_DRAWER_HANDLE_GRIPPER: Final[float] = 0.152
 
 # Arm B mug handle picking point configuration (exact alignment with handle)

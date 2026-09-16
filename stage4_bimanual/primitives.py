@@ -449,10 +449,9 @@ class OpenDrawerPrimitive(BaseManipulationPrimitive):
             self.detach_weld("weld_drawer")
             return self._fail(f"pull incomplete: slide={slide:.3f} m; need >0.040 m")
 
-        # 5. Release and retract vertically. Loosen the pinch first so lifting doesn't drag the drawer
+        # 5. Release and retract vertically. Maintain pinch shape while lifting off the
+        # cylindrical handle so the moving jaw cannot swing into or push against the drawer face.
         self.detach_weld("weld_drawer")
-        ctrl[5] = 0.5
-        self.move(ctrl, 0.4)
 
         # Lift straight up off the cylindrical handle with gripper pitch held to clear the cabinet
         pitch_now = float(np.arcsin(np.clip(self.ik.gripper_pointing_axis("A")[2], -1.0, 1.0)))
