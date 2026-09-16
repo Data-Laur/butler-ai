@@ -40,3 +40,6 @@ data/test_collection/
 .idea/
 .vscode/
 .claude/
+
+# Local debug screenshots (not project assets)
+scratch/*.png

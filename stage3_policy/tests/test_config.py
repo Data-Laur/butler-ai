@@ -79,19 +79,62 @@ def test_arm_bases_match_the_arm_xml():
         assert cfg.keepout_zones[f"arm_{arm}_base"].contains(*spec.base_xy)
 
 
-@pytest.mark.parametrize(("name", "geom"), [("plate", "plate_geom"), ("mug", "mug_geom"), ("water_bottle", "bottle_geom")])
-def test_object_extents_cover_the_collision_geometry(name, geom):
+def _cylinder_extent(geoms: list[str]) -> tuple[float, float]:
+    """Footprint radius and total height of a compound object made of cylinders.
+
+    An object may be several geoms stacked along +z (the water bottle is a wide
+    body with a narrow neck on top). The footprint is the widest radius and the
+    height spans from the lowest to the highest surface, so a single geom must
+    not be treated as the whole object.
+    """
+    radius = 0.0
+    low, high = math.inf, -math.inf
+    for name in geoms:
+        element = _element(SCENE, "geom", name)
+        r, half_height = _vec(element, "size")
+        centre_z = _vec(element, "pos")[2]
+        radius = max(radius, r)
+        low = min(low, centre_z - half_height)
+        high = max(high, centre_z + half_height)
+    return radius, high - low
+
+
+# Objects whose collision shape is one or more cylinders, listed bottom-up.
+# water_bottle is compound: bottle_body (z 0.000-0.100) plus bottle_geom, the
+# narrow neck (z 0.100-0.160).
+OBJECT_GEOMS = {
+    "plate": ["plate_geom"],
+    "mug": ["mug_geom"],
+    "water_bottle": ["bottle_body", "bottle_geom"],
+}
+
+# The geom a body grasp closes on. For the bottle that is the wide body, which is
+# what stage4_bimanual.PickBottlePrimitive actually grips - not the neck.
+GRASP_GEOM = {"mug": "mug_geom", "water_bottle": "bottle_body"}
+
+
+@pytest.mark.parametrize("name", sorted(OBJECT_GEOMS))
+def test_object_extents_cover_the_collision_geometry(name):
     spec = load_planner_config().objects[name]
-    radius, half_height = _vec(_element(SCENE, "geom", geom), "size")
+    radius, height = _cylinder_extent(OBJECT_GEOMS[name])
 
     assert spec.footprint_radius_m >= radius
-    assert spec.height_m == pytest.approx(2 * half_height)
+    assert spec.height_m == pytest.approx(height)
 
 
-@pytest.mark.parametrize(("name", "geom"), [("mug", "mug_geom"), ("water_bottle", "bottle_geom")])
-def test_body_grasp_height_is_the_collision_centre(name, geom):
+@pytest.mark.parametrize("name", sorted(GRASP_GEOM))
+def test_body_grasp_height_is_inside_the_grasped_geom(name):
+    """The planner's grasp point must lie within the geom the gripper closes on."""
     spec = load_planner_config().objects[name]
-    assert spec.grasp_offset_m[2] == pytest.approx(_vec(_element(SCENE, "geom", geom), "pos")[2])
+    element = _element(SCENE, "geom", GRASP_GEOM[name])
+    centre_z = _vec(element, "pos")[2]
+    half_height = _vec(element, "size")[1]
+    grasp_z = spec.grasp_offset_m[2]
+
+    assert centre_z - half_height <= grasp_z <= centre_z + half_height, (
+        f"{name}: grasp offset z={grasp_z} is outside {GRASP_GEOM[name]} "
+        f"(z {centre_z - half_height:.3f}..{centre_z + half_height:.3f})"
+    )
 
 
 @pytest.mark.parametrize(
