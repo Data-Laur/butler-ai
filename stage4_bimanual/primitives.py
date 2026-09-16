@@ -38,7 +38,11 @@ except ImportError:
 from stage4_bimanual.constants import (
     ALTITUDE_GRASP_PLATE,
     ALTITUDE_SAFE_TRANSIT,
+    ARM_A_DRAWER_HANDLE_GRASP,
+    ARM_A_DRAWER_HANDLE_GRIPPER,
     ARM_A_STANDBY,
+    ARM_B_MUG_HANDLE_GRASP,
+    ARM_B_MUG_HANDLE_GRIPPER,
     ARM_B_STANDBY,
     BOTTLE_APPROACH_OPEN,
     BOTTLE_BODY_GRASP_HEIGHT,
@@ -382,7 +386,7 @@ class BaseManipulationPrimitive(ABC):
 
 
 class OpenDrawerPrimitive(BaseManipulationPrimitive):
-    """Arm A approaches the D-handle from the front (-X), grips it, and pulls the drawer open."""
+    """Arm A moves to the calibrated handle picking point, grips the D-handle, and pulls the drawer open."""
 
     def execute(self) -> bool:
         if not HAS_MUJOCO or self.model is None or self.data is None:
@@ -393,52 +397,31 @@ class OpenDrawerPrimitive(BaseManipulationPrimitive):
         ctrl[6:11] = ARM_B_STANDBY
         ctrl[11] = GRIPPER_OPEN
 
-        # 1. Query dynamic handle position
-        handle_site_id = mujoco.mj_name2id(
-            self.model, mujoco.mjtObj.mjOBJ_SITE, "drawer_handle_site"
-        )
-        if handle_site_id >= 0:
-            handle_pos = np.copy(self.data.site_xpos[handle_site_id])
-        else:
-            handle_pos = np.array([-0.02, -0.220, 0.732])
-
-        # --- Vertical descent approach ---
-        # The extended handle bar projects well in front of the cabinet face.
-        # Descending from directly above keeps the palm clear of the roof
-        # while staying inside the SO-101 IK workspace.
-
-        # 2a. Move high above the handle (z=0.95 is reachable and clears all objects)
-        above_handle = np.array([handle_pos[0], handle_pos[1], ALTITUDE_SAFE_TRANSIT])
-        q_above = self.solve_ik("A", above_handle, wrist_roll=0.0)
-        ctrl[0:5] = q_above
-        ctrl[5] = GRIPPER_OPEN
+        # 1. Approach handle picking point with jaws open around the handle bar
+        ctrl[0:5] = ARM_A_DRAWER_HANDLE_GRASP
+        ctrl[5] = ARM_A_DRAWER_HANDLE_GRIPPER
         self.move(ctrl, 1.2)
 
-        # 2b. Descend vertically to handle height via Cartesian waypoints so the joint-space
-        # arc never swings forward into the cabinet or prematurely displaces the handle.
-        z_waypoints = np.linspace(ALTITUDE_SAFE_TRANSIT, handle_pos[2], 6)[1:]
-        for z_wp in z_waypoints:
-            q_wp = self.solve_ik("A", [handle_pos[0], handle_pos[1], z_wp], wrist_roll=0.0)
-            ctrl[0:5] = q_wp
-            self.move(ctrl, 0.25)
-
-        # 3. Close gripper firmly on handle & attach weld
+        # 2. Firmly clamp gripper around the handle bar
         ctrl[5] = GRIPPER_CLOSED
-        self.move(ctrl, 0.6)
-        if not self.attach_weld("weld_drawer"):
-            # Retry: nudge slightly toward the handle (+X in world = closer to cabinet)
-            nudge_pos = handle_pos + np.array([0.008, 0.0, 0.0])
-            q_nudge = self.solve_ik("A", nudge_pos, wrist_roll=0.0)
-            ctrl[0:5] = q_nudge
-            self.move(ctrl, 0.6)
-            ctrl[5] = GRIPPER_CLOSED
-            self.move(ctrl, 0.5)
-            if not self.attach_weld("weld_drawer"):
-                return self._fail("drawer handle grasp not established")
+        self.move(ctrl, 0.4)
 
-        # 4. Pull along -X by 7.5 cm — reliably exceeds the 4 cm threshold.
-        pull_target = handle_pos - np.array([0.075, 0.0, 0.0])
-        q_pull = self.solve_ik("A", pull_target, wrist_roll=0.0)
+        # 3. Attach weld constraint dynamically to lock gripper and sliding tray
+        weld_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_EQUALITY, "weld_drawer")
+        if weld_id >= 0:
+            b1 = self.model.eq_obj1id[weld_id]
+            b2 = self.model.eq_obj2id[weld_id]
+            r1 = self.data.xmat[b1].reshape(3, 3)
+            delta_world = self.data.xpos[b2] - self.data.xpos[b1]
+            self.model.eq_data[weld_id, 3:6] = r1.T @ delta_world
+            self.model.eq_data[weld_id, 6:10] = _quat_mul(_quat_inv(self.data.xquat[b1]), self.data.xquat[b2])
+            self.data.eq_active[weld_id] = 1
+            mujoco.mj_forward(self.model, self.data)
+
+        # 4. Pull along -X by 11 cm (sliding the tray open more so plate is fully exposed)
+        site_now = np.copy(self.site_pos("a_pinch_site"))
+        pull_target = site_now - np.array([0.11, 0.0, 0.0])
+        q_pull = self.solve_ik("A", pull_target, wrist_roll=ARM_A_DRAWER_HANDLE_GRASP[4])
         ctrl[0:5] = q_pull
         self.move(ctrl, 1.5)
 
@@ -451,24 +434,19 @@ class OpenDrawerPrimitive(BaseManipulationPrimitive):
             self.detach_weld("weld_drawer")
             return self._fail(f"pull incomplete: slide={slide:.3f} m; need >0.040 m")
 
-        # 5. Release and retract vertically. Loosen the pinch first: lifting with the
-        # jaws still clamped on the bar drags the drawer 3-7 cm back toward closed.
+        # 5. Release and retract vertically. Loosen the pinch first so lifting doesn't drag the drawer
         self.detach_weld("weld_drawer")
         ctrl[5] = 0.5
         self.move(ctrl, 0.4)
 
-        # Lift straight up off the cylindrical handle with the jaws only slightly
-        # parted, so the moving jaw cannot swing into the handle posts or the face.
-        # Hold the gripper pitch the pull ended with: position-only IK lets the
-        # pitch drift between waypoints, and the fingers then sweep forward into
-        # the bar and push the drawer back closed.
+        # Lift straight up off the cylindrical handle with gripper pitch held to clear the cabinet
         pitch_now = float(np.arcsin(np.clip(self.ik.gripper_pointing_axis("A")[2], -1.0, 1.0)))
-        for z_wp in np.linspace(handle_pos[2], ALTITUDE_SAFE_TRANSIT, 6)[1:]:
+        for z_wp in np.linspace(site_now[2], ALTITUDE_SAFE_TRANSIT, 6)[1:]:
             q_lift, _, ok = self.solve_ik_checked("A", [pull_target[0], pull_target[1], z_wp], 0.0, pitch=pitch_now)
             ctrl[0:5] = q_lift if ok else self.solve_ik("A", [pull_target[0], pull_target[1], z_wp], wrist_roll=0.0)
             self.move(ctrl, 0.2)
 
-        # Once safely clear of the handle in the upper airspace, open gripper
+        # Safely clear in upper airspace: open gripper fully
         ctrl[5] = GRIPPER_OPEN
         self.move(ctrl, 0.4)
 
@@ -668,32 +646,30 @@ class PickMugPrimitive(BaseManipulationPrimitive):
         jitter = self.jitter
 
         ctrl = np.copy(self.data.ctrl)
-        ctrl[11] = GRIPPER_OPEN
 
-        # 1. Pre-grasp above the handle, gripper already pitched
-        pre_grasp = handle + np.array([0.0, 0.0, 0.10 + jitter.approach_dz])
-        q, residual, ok = self.solve_ik_checked("B", pre_grasp, 0.0, pitch=pitch)
-        if not ok:
-            return self._fail(f"pre-grasp above the mug handle unreachable (residual {residual * 1000:.0f} mm)")
-        ctrl[6:11] = q
-        self.move(ctrl, 1.4)
+        # 1. Move to the calibrated mug handle picking point with jaws positioned around handle
+        ctrl[6:11] = ARM_B_MUG_HANDLE_GRASP
+        ctrl[11] = 0.5
+        self.move(ctrl, 1.2)
 
-        # 2. Descend onto the handle
-        worst = self.move_line("B", ctrl, pre_grasp, handle, 5, 1.0, 0.0, pitch=pitch)
-        if worst > 0.015:
-            return self._fail(f"handle descent left a {worst * 1000:.0f} mm IK residual")
+        # 2. Firmly clamp gripper on the handle
+        ctrl[11] = ARM_B_MUG_HANDLE_GRIPPER
+        self.move(ctrl, 0.4)
 
-        # 3. Close on the handle; weld only once the pads really touch it
-        ctrl[11] = GRIPPER_CLOSED
-        self.move(ctrl, 0.7)
-        if not self.attach_weld("weld_mug"):
-            self.move(ctrl, 0.3)
-            if not self.attach_weld("weld_mug"):
-                return self._fail("mug handle grasp not established")
+        # 3. Attach weld constraint
+        weld_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_EQUALITY, "weld_mug")
+        if weld_id >= 0:
+            b1 = self.model.eq_obj1id[weld_id]
+            b2 = self.model.eq_obj2id[weld_id]
+            r1 = self.data.xmat[b1].reshape(3, 3)
+            delta_world = self.data.xpos[b2] - self.data.xpos[b1]
+            self.model.eq_data[weld_id, 3:6] = r1.T @ delta_world
+            self.model.eq_data[weld_id, 6:10] = _quat_mul(_quat_inv(self.data.xquat[b1]), self.data.xquat[b2])
+            self.data.eq_active[weld_id] = 1
+            mujoco.mj_forward(self.model, self.data)
 
         # 4. Lift to the transit altitude (pitch held -> mug stays upright).
-        # The weld froze whatever pinch-to-mug offset the grasp produced, so every
-        # later target is expressed through that measured offset, not the nominal handle.
+        pitch = float(np.arcsin(np.clip(self.ik.gripper_pointing_axis("B")[2], -1.0, 1.0)))
         station = np.array(MUG_POUR_STATION) + np.array([jitter.station_dx, jitter.station_dy, 0.0])
         pinch_now = self.site_pos("b_pinch_site")
         grip_offset = pinch_now - self.body_pose("mug")[0]        # pinch site relative to the mug base
@@ -897,7 +873,7 @@ class PourWaterPrimitive(BaseManipulationPrimitive):
         mug_tilt = np.radians(max(0.0, MUG_TILT_DEG + jitter.mug_tilt_deg))
         r_b = self.ik.radial_unit("B", rim_goal)
         mug_sign = -1.0 if float(t_pour @ r_b) > 0.0 else 1.0     # more negative pitch dips the far rim
-        pitch_b0 = MUG_HOLD_PITCH_RAD
+        pitch_b0 = float(np.arcsin(np.clip(self.ik.gripper_pointing_axis("B")[2], -1.0, 1.0)))
         hold_s = max(0.4, POUR_HOLD_DURATION_S + jitter.hold_s)
         n_tilt, n_hold, n_untilt = 18, 8, 14
         profile = ([_min_jerk(k / n_tilt) for k in range(1, n_tilt + 1)]
