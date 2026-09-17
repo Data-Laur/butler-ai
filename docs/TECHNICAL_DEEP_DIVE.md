@@ -366,20 +366,3 @@ explicitly in `stage3_policy/CONTRACT_PROPOSAL.md` (marked "NOT APPROVED" — a 
 an unresolved design discussion, not a finished spec presented as settled).
 
 ---
-
-## Full limitations list
-
-- No true object hand-off between grippers — the pour is simultaneous complementary action.
-- No fluid simulation — pour success is a geometric pose proxy.
-- Live perception uses ground-truth simulator state, not the (separately validated) vision
-  pipeline, which isn't yet connected to the MuJoCo camera feed.
-- The learned ACT policy covers one skill and isn't validated for closed-loop task success.
-- Fingertip collision geometry doesn't cover table/plate/drawer/mug contact.
-- Planner's `target_pose`/`grip_force`/`approach_height` aren't consumed by the executor,
-  which re-measures object poses from the simulator directly.
-- Spoon, fork, and drawer-closing are explicitly unsupported by the planner.
-- The full-pipeline 10-seed evaluation report needs a fresh run before submission.
-- NPU inference is ~19× slower than CPU for this model — no quantization attempted yet.
-- An untracked local artifact (`kernel.errors.txt`, gitignored) recorded an Intel GPU
-  shader-compiler error during earlier testing — honest evidence that GPU-plugin kernel
-  compilation wasn't always reliable; it didn't block the CPU/NPU results reported above.
